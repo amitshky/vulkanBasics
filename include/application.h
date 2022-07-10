@@ -17,10 +17,12 @@ private:
 	void InitWindow();
 	void InitVulkan();
 	void Cleanup();
+	void CreateVulkanInstance();
 
 private:
 	std::string m_Title;
 	int32_t m_Width;
 	int32_t m_Height;
 	GLFWwindow* m_Window;
+	VkInstance m_VulkanInstance;
 };
