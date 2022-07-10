@@ -1,0 +1,55 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		// MSVC
+		{
+			"name": "(MSVC) Debug",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"preLaunchTask": "Build-MSVC-Debug",
+			"program": "${workspaceFolder}/build/src/Debug/vulkanBasics.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "newExternalWindow"
+		},
+		{
+			"name": "(MSVC) Release",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"preLaunchTask": "Build-MSVC-Release",
+			"program": "${workspaceFolder}/build/src/Release/vulkanBasics.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "newExternalWindow"
+		},
+		// Clang
+		{
+			"name": "(Clang) Debug",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"preLaunchTask": "Build-Clang-Debug",
+			"program": "${workspaceFolder}/build/src/vulkanBasics.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "newExternalWindow"
+		},
+		{
+			"name": "(Clang) Release",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"preLaunchTask": "Build-Clang-Release",
+			"program": "${workspaceFolder}/build/src/vulkanBasics.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "newExternalWindow"
+		},
+	]
+}
