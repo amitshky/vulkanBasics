@@ -31,6 +31,7 @@ class Application
 {
 public:
 	Application(const std::string& title, int32_t width, int32_t height);
+	~Application();
 
 	void Run();
 
