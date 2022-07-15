@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -27,11 +28,24 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
 
+struct QueueFamilyIndices
+{
+	// std::optional contains no value until you assign something to it
+	// we can check if it contains a value by calling has_value()
+	std::optional<uint32_t> graphicsFamily;
+
+	inline bool IsComplete() const { return graphicsFamily.has_value(); }
+};
+
+
 class Application
 {
 public:
 	Application(const std::string& title, int32_t width, int32_t height);
 	~Application();
+
+	Application(const Application&) = delete;
+	Application& operator=(const Application&) = delete;
 
 	void Run();
 
@@ -53,6 +67,10 @@ private:
 	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& debugMessengerInfo);
 	void SetupDebugMessenger();
 
+	void PickPhysicalDevice();
+	bool IsDeviceSuitable(VkPhysicalDevice physicalDevice);
+	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
+
 private:
 	std::string m_Title;
 	int32_t m_Width;
@@ -60,4 +78,5 @@ private:
 	GLFWwindow* m_Window;
 	VkInstance m_VulkanInstance;
 	VkDebugUtilsMessengerEXT m_DebugMessenger; // handle for DebugCallback
+	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 };

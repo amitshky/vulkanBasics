@@ -1,1 +1,1 @@
-./build/src/Debug/vulkanBasics.exe
+.\build\src\Debug\vulkanBasics.exe

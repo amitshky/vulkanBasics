@@ -64,6 +64,7 @@ void Application::InitVulkan()
 {
 	CreateVulkanInstance();
 	SetupDebugMessenger();
+	PickPhysicalDevice();
 }
 
 void Application::Cleanup()
@@ -126,6 +127,7 @@ void Application::CreateVulkanInstance()
 	std::cout << "Available Vulkan extensions (" << extensionCount << "):\n";
 	for (auto& extension : availableExtensions)
 		std::cout << "    " << extension.extensionName << '\n';
+	std::cout << '\n';
 
 
 	// create an instance
@@ -213,4 +215,70 @@ void Application::SetupDebugMessenger()
 
 	if (CreateDebugUtilsMessengerEXT(m_VulkanInstance, &debugMessengerInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
 		throw std::runtime_error("Failed to setup debug messenger!");
+}
+
+void Application::PickPhysicalDevice()
+{
+	uint32_t physicalDeviceCount = 0;
+	vkEnumeratePhysicalDevices(m_VulkanInstance, &physicalDeviceCount, nullptr);
+
+	if (physicalDeviceCount == 0)
+		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+
+	std::vector<VkPhysicalDevice> physicalDevices{physicalDeviceCount};
+	vkEnumeratePhysicalDevices(m_VulkanInstance, &physicalDeviceCount, physicalDevices.data());
+
+	// currently we only work with one device
+	for (const auto& device : physicalDevices)
+	{
+		if (IsDeviceSuitable(device))
+		{
+			m_PhysicalDevice = device;
+			break;
+		}
+	}
+
+	if (m_PhysicalDevice == VK_NULL_HANDLE)
+		throw std::runtime_error("Failed to find a suitable GPU!");
+
+	// we dont need to write this
+	VkPhysicalDeviceProperties physicalDeviceProperties;
+	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &physicalDeviceProperties);
+	
+	VkPhysicalDeviceFeatures physicalDeviceFeatures;
+	vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &physicalDeviceFeatures);
+
+	std::cout << "Physical device info:\n"
+			  << "    Device name: " << physicalDeviceProperties.deviceName << "\n\n";
+}
+
+bool Application::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
+{
+	QueueFamilyIndices indicies = FindQueueFamilies(physicalDevice);
+
+	return indicies.IsComplete();
+}
+
+QueueFamilyIndices Application::FindQueueFamilies(VkPhysicalDevice physicalDevice)
+{
+	// for now we only look for queue that supports graphics commands
+	QueueFamilyIndices indices;
+
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> queueFamilies{queueFamilyCount};
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+
+	// find a queue that supports graphics commands
+	for (int i = 0; i < queueFamilies.size(); ++i)
+	{
+		if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			indices.graphicsFamily = i;
+		
+		if (indices.IsComplete())
+			break;
+	}
+
+	return indices;
 }

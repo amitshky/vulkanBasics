@@ -1,6 +1,33 @@
 # vulkanBasics
 Learning Vulkan API
 
+
+## Prerequisites
+* [CMake](https://cmake.org/download/)
+* [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) ([Installation](https://vulkan.lunarg.com/doc/sdk/1.3.211.0/windows/getting_started.html))
+
+
+## Build and Run
+```
+cmake -B build -S .
+cmake --build build
+```
+* Then navigate to the output file (.exe) and run it.
+
+OR (in VSCode)
+
+* Start debugging (Press F5) (Currently configured for Clang with Ninja and MSVC for Windows)
+
+OR (using bat scripts from `scripts` folder)
+
+* Run them from the root directory of the repo. For example:
+```
+./scripts/config-msvc.bat
+./scripts/build-msvc-rel.bat
+./scripts/run-msvc-rel.bat
+```
+
+
 ## Notes
 ### General overview
 * Create an instance of the Vulkan API (`VkInstance`)
@@ -21,6 +48,20 @@ Learning Vulkan API
 	* This can be changed by providing explicit callback
 * Message callbacks filters logs (you can configure to show certail logs)
 
+### Physical device
+* We need to select a physical device that supports the features we need
+* Multiple physical devices can be selected and run simultaneously
+
+### Queue families
+* Every Vulkan operation requries commands to be submitted to a queue
+* Each family of queues only allows a subset of commands
+
 
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)
+
+
+## Dev Screenshots
+* Initial console window showing available Vulkan extensions and physical device
+
+	<img src="img/initial.png" width=450>
