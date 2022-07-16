@@ -71,6 +71,8 @@ private:
 	bool IsDeviceSuitable(VkPhysicalDevice physicalDevice);
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
 
+	void CreateLogicalDevice();
+
 private:
 	std::string m_Title;
 	int32_t m_Width;
@@ -79,4 +81,6 @@ private:
 	VkInstance m_VulkanInstance;
 	VkDebugUtilsMessengerEXT m_DebugMessenger; // handle for DebugCallback
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
+	VkDevice m_Device; // logical device
+	VkQueue m_GraphicsQueue; // handle to the queue
 };

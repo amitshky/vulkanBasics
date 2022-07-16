@@ -1,4 +1,7 @@
+# clangd cache
 .cache/
+
+# build files
 build/
 
 # SPIR-V files

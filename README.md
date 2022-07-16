@@ -4,7 +4,7 @@ Learning Vulkan API
 
 ## Prerequisites
 * [CMake](https://cmake.org/download/)
-* [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) ([Installation](https://vulkan.lunarg.com/doc/sdk/1.3.211.0/windows/getting_started.html))
+* [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) ([Installation guide](https://vulkan.lunarg.com/doc/sdk/latest/windows/getting_started.html))
 
 
 ## Build and Run
@@ -55,6 +55,16 @@ OR (using bat scripts from `scripts` folder)
 ### Queue families
 * Every Vulkan operation requries commands to be submitted to a queue
 * Each family of queues only allows a subset of commands
+
+
+### Logical device and queues
+* Specify which queues to create after querying queue families
+* Currently available drivers will only allow to create a small number of queues for each queue family
+	* you don't really need more than one
+* We can create all of the command buffers on multiple threads and then submit them all at once on the main thread
+* you can assign priorities to the queues
+* Queues are automatically created with the logical device
+	* Device queues are implicitly destroyed when the device is destroyed
 
 
 ## References
