@@ -56,15 +56,20 @@ OR (using bat scripts from `scripts` folder)
 * Every Vulkan operation requries commands to be submitted to a queue
 * Each family of queues only allows a subset of commands
 
-
 ### Logical device and queues
 * Specify which queues to create after querying queue families
 * Currently available drivers will only allow to create a small number of queues for each queue family
-	* you don't really need more than one
+	* You don't really need more than one
 * We can create all of the command buffers on multiple threads and then submit them all at once on the main thread
-* you can assign priorities to the queues
+* You can assign priorities to the queues
 * Queues are automatically created with the logical device
 	* Device queues are implicitly destroyed when the device is destroyed
+
+### Window surface
+* Vulkan cannot directly interface with the window system
+	* We use WSI (Window System Integration) extensions
+		* `VK_KHR_surface`
+* Window surface is required to render images
 
 
 ## References

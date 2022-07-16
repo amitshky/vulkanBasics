@@ -64,7 +64,9 @@ void Application::InitVulkan()
 {
 	CreateVulkanInstance();
 	SetupDebugMessenger();
+	CreateWindowSurface();
 	PickPhysicalDevice();
+	CreateLogicalDevice();
 }
 
 void Application::Cleanup()
@@ -74,6 +76,7 @@ void Application::Cleanup()
 	if (enableValidationLayers)
 		DestroyDebugUtilsMessengerEXT(m_VulkanInstance, m_DebugMessenger, nullptr);
 
+	vkDestroySurfaceKHR(m_VulkanInstance, m_WindowSurface, nullptr);
 	vkDestroyInstance(m_VulkanInstance, nullptr);
 
 	glfwDestroyWindow(m_Window);
@@ -95,29 +98,29 @@ void Application::CreateVulkanInstance()
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
 	// specify which extensions and validation layers to use
-	VkInstanceCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo = &appInfo;
+	VkInstanceCreateInfo instanceCreateInfo{};
+	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	instanceCreateInfo.pApplicationInfo = &appInfo;
 	// we need extensions to interface with the window
 	uint32_t extensionCount = 0;
 	auto extensions = GetRequiredExtensions();  // returns a required list of extensions based on whether validation layers are enabled or not
-	createInfo.enabledExtensionCount = extensions.size();
-	createInfo.ppEnabledExtensionNames = extensions.data();
+	instanceCreateInfo.enabledExtensionCount = extensions.size();
+	instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
 	// debug messenger
 	VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
 	// specify global validation layers
 	if (enableValidationLayers) // include validation layers if enabled
 	{
-		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-		createInfo.ppEnabledLayerNames = validationLayers.data();
+		instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+		instanceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 
 		PopulateDebugMessengerCreateInfo(debugMessengerInfo);
-		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugMessengerInfo;
+		instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugMessengerInfo;
 	} 
 	else
 	{
-		createInfo.enabledLayerCount = 0;
-		createInfo.pNext = nullptr;
+		instanceCreateInfo.enabledLayerCount = 0;
+		instanceCreateInfo.pNext = nullptr;
 	}
 
 	// to check the available extensions
@@ -133,7 +136,7 @@ void Application::CreateVulkanInstance()
 
 
 	// create an instance
-	if (vkCreateInstance(&createInfo, nullptr, &m_VulkanInstance) != VK_SUCCESS)
+	if (vkCreateInstance(&instanceCreateInfo, nullptr, &m_VulkanInstance) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Vulkan Instance!");
 }
 
@@ -323,9 +326,15 @@ void Application::CreateLogicalDevice()
 		deviceCreateInfo.enabledExtensionCount = 0;
 	}
 
-	if (vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, nullptr, &m_Device))
+	if (vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, nullptr, &m_Device) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create logcial device!");
 
 	// get the queue handle
 	vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
+}
+
+void Application::CreateWindowSurface()
+{
+	if (glfwCreateWindowSurface(m_VulkanInstance, m_Window, nullptr, &m_WindowSurface) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create window surface!");
 }

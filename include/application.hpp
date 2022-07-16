@@ -72,6 +72,7 @@ private:
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
 
 	void CreateLogicalDevice();
+	void CreateWindowSurface();
 
 private:
 	std::string m_Title;
@@ -83,4 +84,5 @@ private:
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 	VkDevice m_Device; // logical device
 	VkQueue m_GraphicsQueue; // handle to the queue
+	VkSurfaceKHR m_WindowSurface;
 };
