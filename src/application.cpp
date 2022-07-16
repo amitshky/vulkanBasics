@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <cstdint>
 #include <vector>
+#include <set>
 #include <iostream>
 
 
@@ -281,6 +282,15 @@ QueueFamilyIndices Application::FindQueueFamilies(VkPhysicalDevice physicalDevic
 		if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			indices.graphicsFamily = i;
 		
+		// check for queue family compatible for presentation
+		// the graphics queue and the presentation queue might end up being the same
+		// but we treat them as separate queues
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_WindowSurface, &presentSupport);
+
+		if (presentSupport)
+			indices.presentFamily = i;
+		
 		if (indices.IsComplete())
 			break;
 	}
@@ -293,13 +303,23 @@ void Application::CreateLogicalDevice()
 	// create queue
 	QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
 
-	VkDeviceQueueCreateInfo queueCreateInfo{};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-	queueCreateInfo.queueCount = 1;
-
+	// we have multiple queues so we create a set of unique queue families
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
+	std::set<uint32_t> uniqueQueueFamilies = {
+		indices.graphicsFamily.value(),
+		indices.presentFamily.value()
+	};
+	
 	float queuePriority = 1.0f;
-	queueCreateInfo.pQueuePriorities = &queuePriority;
+	for (const auto& queueFamily: uniqueQueueFamilies)
+	{
+		VkDeviceQueueCreateInfo queueCreateInfo{};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = queueFamily;
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
 
 	// specify used device features
 	// currently we don't need anything special
@@ -308,7 +328,8 @@ void Application::CreateLogicalDevice()
 	// create logical device
 	VkDeviceCreateInfo deviceCreateInfo{};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 	deviceCreateInfo.queueCreateInfoCount = 1;
 	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
@@ -331,6 +352,7 @@ void Application::CreateLogicalDevice()
 
 	// get the queue handle
 	vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
+	vkGetDeviceQueue(m_Device, indices.presentFamily.value(),  0, &m_PresentQueue);
 }
 
 void Application::CreateWindowSurface()

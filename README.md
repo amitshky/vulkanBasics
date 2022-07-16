@@ -71,6 +71,10 @@ OR (using bat scripts from `scripts` folder)
 		* `VK_KHR_surface`
 * Window surface is required to render images
 
+### Presentation queue
+* Queue families supporting drawing commands and the ones supporting presentation may not overlap
+	* there should be a distinct presentation queue
+
 
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)

@@ -33,8 +33,12 @@ struct QueueFamilyIndices
 	// std::optional contains no value until you assign something to it
 	// we can check if it contains a value by calling has_value()
 	std::optional<uint32_t> graphicsFamily;
+	std::optional<uint32_t> presentFamily;
 
-	inline bool IsComplete() const { return graphicsFamily.has_value(); }
+	inline bool IsComplete() 
+	{ 
+		return graphicsFamily.has_value() && presentFamily.has_value(); 
+	}
 };
 
 
@@ -83,6 +87,7 @@ private:
 	VkDebugUtilsMessengerEXT m_DebugMessenger; // handle for DebugCallback
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 	VkDevice m_Device; // logical device
-	VkQueue m_GraphicsQueue; // handle to the queue
+	VkQueue m_GraphicsQueue; // handle to graphics queue
 	VkSurfaceKHR m_WindowSurface;
+	VkQueue m_PresentQueue; // handle to presentation queue
 };
