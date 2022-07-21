@@ -100,6 +100,9 @@ OR (using bat scripts from `scripts` folder)
 * Swap extent
 	* match the resolution of the window and the swap chain images
 
+### Image views
+* To view an image; access the image and which part of the image to access
+
 
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)

@@ -71,10 +71,14 @@ void Application::InitVulkan()
 	PickPhysicalDevice();
 	CreateLogicalDevice();
 	CreateSwapchain();
+	CreateImageViews();
 }
 
 void Application::Cleanup()
 {
+	for (const auto& imageView : m_SwapchainImageviews)
+		vkDestroyImageView(m_Device, imageView, nullptr);
+
 	vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
 	vkDestroyDevice(m_Device, nullptr);
 
@@ -533,4 +537,36 @@ void Application::CreateSwapchain()
 
 	m_SwapchainImageFormat = surfaceFormat.format;
 	m_SwapchainExtent = extent;
+}
+
+void Application::CreateImageViews()
+{
+	m_SwapchainImageviews.resize(m_SwapchainImages.size());
+
+	for (int i = 0; i < m_SwapchainImages.size(); ++i)
+	{
+		VkImageViewCreateInfo imageViewCreateInfo{};
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.image = m_SwapchainImages[i];
+		// specify how image data should be interpreted
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // treat images as 2D textures
+		imageViewCreateInfo.format = m_SwapchainImageFormat;
+
+		// here you can map the channels as you wish; for example map all the channels to red for a monochrome texture
+		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+		// describe the image's purpose and which part of the image to access
+		// our image will be used as color targets without any mipmapping levels or multiple layers
+		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+		if (vkCreateImageView(m_Device, &imageViewCreateInfo, nullptr, &m_SwapchainImageviews[i]) != VK_SUCCESS)
+			throw std::runtime_error("Failed to create Image views!");
+	}
 }
