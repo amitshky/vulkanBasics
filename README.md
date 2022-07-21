@@ -75,6 +75,31 @@ OR (using bat scripts from `scripts` folder)
 * Queue families supporting drawing commands and the ones supporting presentation may not overlap
 	* there should be a distinct presentation queue
 
+### Swap chain
+* Vulkan doesn't have a default framebuffer
+* It is a queue of images waiting to be rendered on the screen
+* All graphics cards cannot render images directly to the screen
+	* So no such functionality in Vulkan core
+	* We need to enable `VK_KHR_swapchain` device extension
+* Simply checking swap chain availability is not enough, we need to check if it is supported by our window surface.
+* We also need to check:
+	* basic surface capabilities (min/max number of images in swap chain)
+	* surface formats (pixel format and color space)
+	* available presentation modes
+* We need to find the right settings for swap chain, settings such as 
+	* Surface format (color depth)
+	* Presentation mode (conditions for "swapping" images to the screen)
+	* Swap extent (resolution of images in swap chain)
+	* (we will have an ideal value in mind for each of these)
+* Presentation mode
+	* Only `VK_PRESENT_MODE_FIFO_KHR` is guaranteed to be available
+	* `VK_PRESENT_MODE_IMMEDIATE_KHR`: immediately display images from the front of the queue; v-sync: off
+	* `VK_PRESENT_MODE_FIFO_KHR`: the swap chain acts like a queue (writes image from the front); v-sync: on
+	* `VK_PRESENT_MODE_FIFO_RELAXED_KHR`: doesnt wait for the next vertical blank; if the application is late and the queue is empty
+	* `VK_PRESENT_MODE_MAILBOX_KHR`: images in the queue are replaced with new ones
+* Swap extent
+	* match the resolution of the window and the swap chain images
+
 
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)
