@@ -98,6 +98,10 @@ private:
 	void CreateSwapchain();
 	void CreateImageViews();
 
+	void CreateGraphicsPipeline();
+	std::vector<char> LoadShader(const std::string& filepath);
+	VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
 private:
 	std::string m_Title;
 	int32_t m_Width;

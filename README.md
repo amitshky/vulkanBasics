@@ -104,6 +104,37 @@ OR (using bat scripts from `scripts` folder)
 * To view an image; access the image and which part of the image to access
 
 
+### Graphics Pipeline
+* They are a sequence of operations that take the vertices and textures of your meshes all the way to the pixels in the render targets.
+* vertex/index buffer > input assembler > vertex shader > tessellation > geometry shader > rasterization > fragment shader > color blending > framebuffer.
+	* **input assembler:** collects raw vertex data from the buffers
+	* **vertex shader:** run for every vertex and generally applies transfomrations to turn vertex positions from model space to screen space
+	* **tessellation shaders:** allows you to subdivide geometry based on certain rules to increase the mesh quality
+	* **geometry shader:** runs on every primitive (triangle, line, point) and can discard it or output more primitives. (not used much nowadays)
+	* **rasterization:** discretizes the primitives into fragments; any fragment that fall outside the screen are discarded; the attributes outputted by the vertex shader are interpolated across the fragments
+	* **fragment shader:** run for every fragment; determines which framebuffer the fragments are written to and with which color and depth values
+	* **color blending:** mix different fragments that map to the same pixel in the framebuffer
+
+
+### Shader modules
+* shader code in vulkan has to be in bytecode
+	* SPIR-V
+	* this makes turning shader code to native code less complex
+		* with GLSL, the implementation can vary between GPU vendors 
+* **compiler:** `glslc.exe`
+	* same parameter format as gcc and clang
+* **Coordinate system**
+	* notice that the Y coordinates are flipped; -1 to 1 from top to bottom
+	
+	<img src="img/coords.png" width=450>
+* you can also compile shaders from code; [libshaderc](https://github.com/google/shaderc)
+* Shader modules are just a wrapper around the shader bytecode
+* SPIR-V bytecode and machine code are linked after the graphics pipeline is created
+* so we can destroy the shader modules after the pipeline creation is complete
+* to create shaders, we need to assign them to a specific pipeline stage
+
+
+
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)
 

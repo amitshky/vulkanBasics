@@ -4,7 +4,7 @@
 		{
 			"name": "Windows",
 			"includePath": [
-				"${workspaceFolder}/include",
+				"${workspaceFolder}/src",
 				"${workspaceFolder}/lib/glm",
 				"${workspaceFolder}/lib/glfw/include",
 				"${VULKAN_SDK}/include"

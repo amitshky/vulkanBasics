@@ -7,6 +7,7 @@
 #include <iostream>
 #include <algorithm>
 #include <limits>
+#include <fstream>
 
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, 
@@ -72,6 +73,7 @@ void Application::InitVulkan()
 	CreateLogicalDevice();
 	CreateSwapchain();
 	CreateImageViews();
+	CreateGraphicsPipeline();
 }
 
 void Application::Cleanup()
@@ -569,4 +571,67 @@ void Application::CreateImageViews()
 		if (vkCreateImageView(m_Device, &imageViewCreateInfo, nullptr, &m_SwapchainImageviews[i]) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create Image views!");
 	}
+}
+
+void Application::CreateGraphicsPipeline()
+{
+	// load the SPIR-V file
+	auto vertexShaderCode   = LoadShader("assets/shaders/gradientTriangle.vert.spv");
+	auto fragmentShaderCode = LoadShader("assets/shaders/gradientTriangle.frag.spv");
+
+	// creating shader modules
+	VkShaderModule vertexShaderModule   = CreateShaderModule(vertexShaderCode);
+	VkShaderModule fragmentShaderModule = CreateShaderModule(fragmentShaderCode);
+
+	// shader stage creation
+	// filling in the structure for the vertex shader
+	VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
+	vertexShaderStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertexShaderStageInfo.stage  = VK_SHADER_STAGE_VERTEX_BIT;
+	vertexShaderStageInfo.module = vertexShaderModule;
+	vertexShaderStageInfo.pName  = "main";                                               // entrypoint // so it is possible to combine multiple shaders into a single module
+
+	// filling in the structure for the fragment shader
+	VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
+	fragmentShaderStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragmentShaderStageInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragmentShaderStageInfo.module = vertexShaderModule;
+	fragmentShaderStageInfo.pName  = "main";
+
+	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderStageInfo, fragmentShaderStageInfo };
+
+	// once the pipeline creation is complete, the shader modules can be destroyed
+	vkDestroyShaderModule(m_Device, vertexShaderModule, nullptr);
+	vkDestroyShaderModule(m_Device, fragmentShaderModule, nullptr);
+}
+
+std::vector<char> Application::LoadShader(const std::string& filepath)
+{
+	std::ifstream file{ filepath, std::ios::binary | std::ios::ate };
+	if (!file.is_open())
+		throw std::runtime_error("Error opening shader file: " + filepath);
+
+	const size_t fileSize = static_cast<size_t>(file.tellg());
+	std::vector<char> buffer(fileSize);
+
+	file.seekg(0);
+	file.read(buffer.data(), fileSize);
+	file.close();
+
+	return buffer;
+}
+
+VkShaderModule Application::CreateShaderModule(const std::vector<char>& code)
+{
+	VkShaderModuleCreateInfo shaderModuleCreateInfo{};
+	shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	shaderModuleCreateInfo.codeSize = code.size();
+	// code is in char but shaderModule expects it to be in uint32_t
+	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+	VkShaderModule shaderModule;
+	if (vkCreateShaderModule(m_Device, &shaderModuleCreateInfo, nullptr, &shaderModule) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create shader module!");
+	
+	return shaderModule;
 }

@@ -32,7 +32,7 @@ find_package(Vulkan REQUIRED)
 target_include_directories(
 	${PROJECT_NAME} 
 	PUBLIC
-	"include/"
+	"src/"
 	"lib/glm/"
 	"lib/glfw/include/"
 	${Vulkan_INCLUDE_DIR} 

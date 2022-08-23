@@ -1,0 +1,2 @@
+C:\VulkanSDK\1.3.211.0\Bin\glslc.exe assets/shaders/gradientTriangle.vert -o assets/shaders/gradientTriangle.vert.spv
+C:\VulkanSDK\1.3.211.0\Bin\glslc.exe assets/shaders/gradientTriangle.frag -o assets/shaders/gradientTriangle.frag.spv
