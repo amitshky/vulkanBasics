@@ -79,6 +79,7 @@ void Application::InitVulkan()
 
 void Application::Cleanup()
 {
+	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 
@@ -641,7 +642,7 @@ void Application::CreateGraphicsPipeline()
 	VkPipelineShaderStageCreateInfo fragmentShaderStageCreateInfo{};
 	fragmentShaderStageCreateInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragmentShaderStageCreateInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragmentShaderStageCreateInfo.module = vertexShaderModule;
+	fragmentShaderStageCreateInfo.module = fragmentShaderModule;
 	fragmentShaderStageCreateInfo.pName  = "main";
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderStageCreateInfo, fragmentShaderStageCreateInfo };
@@ -676,19 +677,7 @@ void Application::CreateGraphicsPipeline()
 	scissor.offset = { 0, 0 };
 	scissor.extent = m_SwapchainExtent;
 
-	// dynamic states
-	// allows you to specify the data at drawing time
-	//std::vector<VkDynamicState> dynamicStates{
-	//	VK_DYNAMIC_STATE_VIEWPORT,
-	//	VK_DYNAMIC_STATE_SCISSOR
-	//};
-
-	//VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
-	//dynamicStateCreateInfo.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	//dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-	//dynamicStateCreateInfo.pDynamicStates    = dynamicStates.data();
-
-	// without dynamic state
+	// viewport state
 	VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
 	viewportStateCreateInfo.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportStateCreateInfo.viewportCount = 1;
@@ -738,6 +727,18 @@ void Application::CreateGraphicsPipeline()
 	// finalColor.rgb = newAlpha * newColor + (1 - newAlpha) * oldColor;
 	// finalColor.a = newAlpha.a;
 
+	// dynamic states
+	// allows you to specify the data at drawing time
+	std::vector<VkDynamicState> dynamicStates{
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+	dynamicStateCreateInfo.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	dynamicStateCreateInfo.pDynamicStates    = dynamicStates.data();
+
 	// configuration for global color blending settings
 	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{};
 	colorBlendStateCreateInfo.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -762,6 +763,35 @@ void Application::CreateGraphicsPipeline()
 
 	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create graphics pipeline!");
+
+
+	// graphics pipeline
+	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
+	graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	// config all previos objects
+	graphicsPipelineCreateInfo.stageCount          = 2;
+	graphicsPipelineCreateInfo.pStages             = shaderStages;
+	graphicsPipelineCreateInfo.pVertexInputState   = &vertexInputCreateInfo;
+	graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
+	graphicsPipelineCreateInfo.pViewportState      = &viewportStateCreateInfo;
+	graphicsPipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
+	graphicsPipelineCreateInfo.pMultisampleState   = &multisampleStateCreateInfo;
+	graphicsPipelineCreateInfo.pDepthStencilState  = nullptr;
+	graphicsPipelineCreateInfo.pColorBlendState    = &colorBlendStateCreateInfo;
+	graphicsPipelineCreateInfo.pDynamicState       = &dynamicStateCreateInfo;
+	graphicsPipelineCreateInfo.layout              = m_PipelineLayout;
+	graphicsPipelineCreateInfo.renderPass          = m_RenderPass;
+	graphicsPipelineCreateInfo.subpass             = 0;
+	// pipeline can be created by derivin from a previous pipeline
+	// less expensive to set up a pipeline if it has common functionality with an existing pipeline
+	graphicsPipelineCreateInfo.basePipelineHandle  = VK_NULL_HANDLE;
+	graphicsPipelineCreateInfo.basePipelineIndex   = -1;
+
+	// multiple graphicsPipelineCreateInfo can be passed
+	// pipelineCache (2nd param) can be used to store and reuse data
+	if (vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create graphics pipeline!");
+
 
 	// once the pipeline creation is complete, the shader modules can be destroyed
 	vkDestroyShaderModule(m_Device, vertexShaderModule,   nullptr);

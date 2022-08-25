@@ -130,4 +130,5 @@ private:
 
 	// pipeline
 	VkPipelineLayout m_PipelineLayout;
+	VkPipeline m_GraphicsPipeline;
 };
