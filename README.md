@@ -180,6 +180,17 @@ OR (using bat scripts from `scripts` folder)
 * **Pipeline layout:**
 	* specify the uniform values (values passed to the shaders)
 
+
+### Render pass
+* specify framebuffers that will be used while rendering
+	* specify color, depth buffers, samples
+* before finishing pipeline creation
+* **Subpasses and attachment references**
+	* a single render pass can consist of multiple render passes
+	* the subpasses depend on the contents of the framebuffers in the previous passes
+
+
+
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)
 

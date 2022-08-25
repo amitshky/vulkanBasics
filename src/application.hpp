@@ -98,6 +98,7 @@ private:
 	void CreateSwapchain();
 	void CreateImageViews();
 
+	void CreateRenderPass();
 	void CreateGraphicsPipeline();
 	std::vector<char> LoadShader(const std::string& filepath);
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
@@ -123,6 +124,9 @@ private:
 	VkFormat m_SwapchainImageFormat;
 	VkExtent2D m_SwapchainExtent;
 	std::vector<VkImageView> m_SwapchainImageviews;
+
+	// render pass
+	VkRenderPass m_RenderPass;
 
 	// pipeline
 	VkPipelineLayout m_PipelineLayout;

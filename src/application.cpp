@@ -73,12 +73,14 @@ void Application::InitVulkan()
 	CreateLogicalDevice();
 	CreateSwapchain();
 	CreateImageViews();
+	CreateRenderPass();
 	CreateGraphicsPipeline();
 }
 
 void Application::Cleanup()
 {
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 
 	for (const auto& imageView : m_SwapchainImageviews)
 		vkDestroyImageView(m_Device, imageView, nullptr);
@@ -573,6 +575,48 @@ void Application::CreateImageViews()
 		if (vkCreateImageView(m_Device, &imageViewCreateInfo, nullptr, &m_SwapchainImageviews[i]) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create Image views!");
 	}
+}
+
+void Application::CreateRenderPass()
+{
+	// color attachment
+	VkAttachmentDescription colorAttachment{};
+	colorAttachment.format  = m_SwapchainImageFormat; // the format should match the format of the swapchain
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;  // we dont have multisampling yet
+	// determining what to do with the data in the attachment
+	// for color and depth data
+	colorAttachment.loadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	// for stencil data
+	colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	// the textures and framebuffer are represented by `VkImage`, with a certain pixel format
+	// the layout of the pixel format can be changed based on what you're trying to do
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;        // we don't care about the previous layout of the image
+	colorAttachment.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;  // the image should be ready for presentation using swapchain
+
+	// attachment references
+	VkAttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0; // index of attachment ot reference
+	colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	
+	// subpass
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	// the index of the attachment in this array is directly referenced from the fragment shader // layout (location=0) out vec4 outColor
+	subpass.pColorAttachments    = &colorAttachmentRef;
+
+	// render pass
+	VkRenderPassCreateInfo renderPassCreateInfo{};
+	renderPassCreateInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassCreateInfo.attachmentCount = 1;
+	renderPassCreateInfo.pAttachments    = &colorAttachment;
+	renderPassCreateInfo.subpassCount    = 1;
+	renderPassCreateInfo.pSubpasses      = &subpass;
+
+	if (vkCreateRenderPass(m_Device, &renderPassCreateInfo, nullptr, &m_RenderPass) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create render pass!");
 }
 
 void Application::CreateGraphicsPipeline()
