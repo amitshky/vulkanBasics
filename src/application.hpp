@@ -123,4 +123,7 @@ private:
 	VkFormat m_SwapchainImageFormat;
 	VkExtent2D m_SwapchainExtent;
 	std::vector<VkImageView> m_SwapchainImageviews;
+
+	// pipeline
+	VkPipelineLayout m_PipelineLayout;
 };

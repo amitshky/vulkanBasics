@@ -134,6 +134,51 @@ OR (using bat scripts from `scripts` folder)
 * to create shaders, we need to assign them to a specific pipeline stage
 
 
+### Fixed functions
+* **Dynamic state:**
+	* most of the pipeline states have to be baked into the pipeline state, there are some that can be changed without recreating the pipeline at draw time
+
+* **Vertex Input:**
+	* format of the vertex data
+	* Bindings: spacing between data and whether the data is per-vertex of per-instance
+	* Attribute descriptions: which binding to load attributes from, and at which offset
+
+* **Input Assembly:**
+	* describes what kind of geometry will be drawn from the vertices, and if primitive restart should be enabled
+
+* **Viewports and scissors:**
+	* any pixels outside the scissor rectangle will be discarded
+	* they can both be specified as static state or dynamic state
+
+* **Rasterizer:**
+	* takes geometry shaped by vertices and turns them into fragments
+	* performs depth testing, face culling, and scissor test
+
+* **Multisampling:**
+	* combine fragment shader results of multiple pixel into the same pixel
+	* anti-aliasing
+	* only runs the fragment shader once
+
+* **Depth and stencil testing**
+
+* **Color blending:**
+	* combine the fragment shader color with the color already in the framebuffer
+	* `VkPipelineColorBlendAttachmentState`: configuration per attached framebuffer
+	* `VkPipelineColorBlendStateCreateInfo`: global color blending settings
+	* blending operation is performed in the following way:
+	```
+	if (blendEnable) {
+		finalColor.rgb = (srcColorBlendFactor * newColor.rgb) <colorBlendOp> (dstColorBlendFactor * oldColor.rgb);
+		finalColor.a = (srcAlphaBlendFactor * newColor.a) <alphaBlendOp> (dstAlphaBlendFactor * oldColor.a);
+	} else {
+		finalColor = newColor;
+	}
+
+	finalColor = finalColor & colorWriteMask;
+	```
+
+* **Pipeline layout:**
+	* specify the uniform values (values passed to the shaders)
 
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)

@@ -78,6 +78,8 @@ void Application::InitVulkan()
 
 void Application::Cleanup()
 {
+	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+
 	for (const auto& imageView : m_SwapchainImageviews)
 		vkDestroyImageView(m_Device, imageView, nullptr);
 
@@ -101,12 +103,12 @@ void Application::CreateVulkanInstance()
 
 	// info about our application
 	VkApplicationInfo appInfo{};
-	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = m_Title.c_str();
+	appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	appInfo.pApplicationName   = m_Title.c_str();
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.pEngineName = "No Engine";
-	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.apiVersion = VK_API_VERSION_1_0;
+	appInfo.pEngineName        = "No Engine";
+	appInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
+	appInfo.apiVersion         = VK_API_VERSION_1_0;
 
 	// specify which extensions and validation layers to use
 	VkInstanceCreateInfo instanceCreateInfo{};
@@ -115,7 +117,7 @@ void Application::CreateVulkanInstance()
 	// we need extensions to interface with the window
 	uint32_t extensionCount = 0;
 	auto extensions = GetRequiredExtensions();  // returns a required list of extensions based on whether validation layers are enabled or not
-	instanceCreateInfo.enabledExtensionCount = extensions.size();
+	instanceCreateInfo.enabledExtensionCount   = extensions.size();
 	instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
 	// debug messenger
 	VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
@@ -335,9 +337,9 @@ void Application::CreateLogicalDevice()
 	for (const auto& queueFamily: uniqueQueueFamilies)
 	{
 		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = queueFamily;
-		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.queueCount       = 1;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
@@ -348,19 +350,19 @@ void Application::CreateLogicalDevice()
 	
 	// create logical device
 	VkDeviceCreateInfo deviceCreateInfo{};
-	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+	deviceCreateInfo.pQueueCreateInfos    = queueCreateInfos.data();
 	deviceCreateInfo.queueCreateInfoCount = 1;
-	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+	deviceCreateInfo.pEnabledFeatures     = &deviceFeatures;
 
 	// these are similar to create instance but they are device specific this time
-	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+	deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
 	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 	if (enableValidationLayers)
 	{
-		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+		deviceCreateInfo.enabledLayerCount   = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 	}
 	else
@@ -485,8 +487,8 @@ void Application::CreateSwapchain()
 	SwapchainSupportDetails swapchainSupport = QuerySwapchainSupport(m_PhysicalDevice);
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapchainSupport.formats);
-	VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapchainSupport.presentModes);
-	VkExtent2D extent = ChooseSwapExtent(swapchainSupport.capabilities);
+	VkPresentModeKHR   presentMode   = ChooseSwapPresentMode(swapchainSupport.presentModes);
+	VkExtent2D         extent        = ChooseSwapExtent(swapchainSupport.capabilities);
 
 	// specify how many images we want in the swapchain
 	uint32_t imageCount = swapchainSupport.capabilities.minImageCount + 1;
@@ -495,16 +497,16 @@ void Application::CreateSwapchain()
 
 	// create swapchain
 	VkSwapchainCreateInfoKHR swapchainCreateInfo{};
-	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	swapchainCreateInfo.sType   = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	swapchainCreateInfo.surface = m_WindowSurface;
 
 	// swapchain image details
-	swapchainCreateInfo.minImageCount = imageCount;
-	swapchainCreateInfo.imageFormat = surfaceFormat.format;
-	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
-	swapchainCreateInfo.imageExtent = extent;
+	swapchainCreateInfo.minImageCount    = imageCount;
+	swapchainCreateInfo.imageFormat      = surfaceFormat.format;
+	swapchainCreateInfo.imageColorSpace  = surfaceFormat.colorSpace;
+	swapchainCreateInfo.imageExtent      = extent;
 	swapchainCreateInfo.imageArrayLayers = 1; // number of layers in each image
-	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapchainCreateInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 	// handle swapchain images across multiple queue families
 	QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
@@ -512,22 +514,22 @@ void Application::CreateSwapchain()
 
 	if (indices.graphicsFamily != indices.presentFamily)
 	{
-		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT; // image used across multiple queue families
+		swapchainCreateInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;  // image used across multiple queue families
 		swapchainCreateInfo.queueFamilyIndexCount = 2;
-		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+		swapchainCreateInfo.pQueueFamilyIndices   = queueFamilyIndices;
 	}
 	else
 	{
-		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; //image owned by one queue family at a time
-		swapchainCreateInfo.queueFamilyIndexCount = 0; // optional
-		swapchainCreateInfo.pQueueFamilyIndices = 0;   // optional
+		swapchainCreateInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;  //image owned by one queue family at a time
+		swapchainCreateInfo.queueFamilyIndexCount = 0;                          // optional
+		swapchainCreateInfo.pQueueFamilyIndices   = 0;                          // optional
 	}
 
-	swapchainCreateInfo.preTransform = swapchainSupport.capabilities.currentTransform; // we can rotate, flip, etc
-	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // specify if alpha channel is used for blending
-	swapchainCreateInfo.presentMode = presentMode;
-	swapchainCreateInfo.clipped = VK_TRUE;
-	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE; // if new swapchain is to be created, the old one should be referenced here
+	swapchainCreateInfo.preTransform   = swapchainSupport.capabilities.currentTransform;  // we can rotate, flip, etc
+	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;               // specify if alpha channel is used for blending
+	swapchainCreateInfo.presentMode    = presentMode;
+	swapchainCreateInfo.clipped        = VK_TRUE;
+	swapchainCreateInfo.oldSwapchain   = VK_NULL_HANDLE;                                  // if new swapchain is to be created, the old one should be referenced here
 
 	if (vkCreateSwapchainKHR(m_Device, &swapchainCreateInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Swap chain!");
@@ -552,7 +554,7 @@ void Application::CreateImageViews()
 		imageViewCreateInfo.image = m_SwapchainImages[i];
 		// specify how image data should be interpreted
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // treat images as 2D textures
-		imageViewCreateInfo.format = m_SwapchainImageFormat;
+		imageViewCreateInfo.format   = m_SwapchainImageFormat;
 
 		// here you can map the channels as you wish; for example map all the channels to red for a monochrome texture
 		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -562,11 +564,11 @@ void Application::CreateImageViews()
 
 		// describe the image's purpose and which part of the image to access
 		// our image will be used as color targets without any mipmapping levels or multiple layers
-		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCreateInfo.subresourceRange.baseMipLevel   = 0;
+		imageViewCreateInfo.subresourceRange.levelCount     = 1;
 		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		imageViewCreateInfo.subresourceRange.layerCount = 1;
+		imageViewCreateInfo.subresourceRange.layerCount     = 1;
 
 		if (vkCreateImageView(m_Device, &imageViewCreateInfo, nullptr, &m_SwapchainImageviews[i]) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create Image views!");
@@ -585,23 +587,140 @@ void Application::CreateGraphicsPipeline()
 
 	// shader stage creation
 	// filling in the structure for the vertex shader
-	VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
-	vertexShaderStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertexShaderStageInfo.stage  = VK_SHADER_STAGE_VERTEX_BIT;
-	vertexShaderStageInfo.module = vertexShaderModule;
-	vertexShaderStageInfo.pName  = "main";                                               // entrypoint // so it is possible to combine multiple shaders into a single module
+	VkPipelineShaderStageCreateInfo vertexShaderStageCreateInfo{};
+	vertexShaderStageCreateInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertexShaderStageCreateInfo.stage  = VK_SHADER_STAGE_VERTEX_BIT;
+	vertexShaderStageCreateInfo.module = vertexShaderModule;
+	vertexShaderStageCreateInfo.pName  = "main"; // entrypoint // so it is possible to combine multiple shaders into a single module
 
 	// filling in the structure for the fragment shader
-	VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
-	fragmentShaderStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fragmentShaderStageInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragmentShaderStageInfo.module = vertexShaderModule;
-	fragmentShaderStageInfo.pName  = "main";
+	VkPipelineShaderStageCreateInfo fragmentShaderStageCreateInfo{};
+	fragmentShaderStageCreateInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragmentShaderStageCreateInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragmentShaderStageCreateInfo.module = vertexShaderModule;
+	fragmentShaderStageCreateInfo.pName  = "main";
 
-	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderStageInfo, fragmentShaderStageInfo };
+	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderStageCreateInfo, fragmentShaderStageCreateInfo };
+
+	// fixed functions
+	// vertex input
+	// we hard-coded the vertex data so we specify that there is not vertex data for now
+	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
+	vertexInputCreateInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputCreateInfo.vertexBindingDescriptionCount   = 0;
+	vertexInputCreateInfo.pVertexBindingDescriptions      = nullptr;
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
+	vertexInputCreateInfo.pVertexAttributeDescriptions    = nullptr;
+
+	// input assembly
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
+	inputAssemblyCreateInfo.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssemblyCreateInfo.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssemblyCreateInfo.primitiveRestartEnable = VK_FALSE;
+
+	// viewport
+	VkViewport viewport{};
+	viewport.x        = 0.0f;
+	viewport.y        = 0.0f;
+	viewport.width    = static_cast<float>(m_SwapchainExtent.width);
+	viewport.height   = static_cast<float>(m_SwapchainExtent.width);
+	viewport.minDepth = 0.0f; // range of depth values for framebuffer
+	viewport.maxDepth = 1.0f;
+
+	// scissor
+	VkRect2D scissor{};
+	scissor.offset = { 0, 0 };
+	scissor.extent = m_SwapchainExtent;
+
+	// dynamic states
+	// allows you to specify the data at drawing time
+	//std::vector<VkDynamicState> dynamicStates{
+	//	VK_DYNAMIC_STATE_VIEWPORT,
+	//	VK_DYNAMIC_STATE_SCISSOR
+	//};
+
+	//VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+	//dynamicStateCreateInfo.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	//dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	//dynamicStateCreateInfo.pDynamicStates    = dynamicStates.data();
+
+	// without dynamic state
+	VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
+	viewportStateCreateInfo.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportStateCreateInfo.viewportCount = 1;
+	viewportStateCreateInfo.pViewports    = &viewport;
+	viewportStateCreateInfo.scissorCount  = 1;
+	viewportStateCreateInfo.pScissors     = &scissor;
+
+	// rasterizer
+	VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
+	rasterizationStateCreateInfo.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizationStateCreateInfo.depthClampEnable        = VK_FALSE;                // if true, clamp to depth instead of discarding
+	rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;                // if true, the geometry never passes through rasterizer stage
+	rasterizationStateCreateInfo.polygonMode             = VK_POLYGON_MODE_FILL;    // how fragments are generated
+	rasterizationStateCreateInfo.lineWidth               = 1.0f;                    // thickness of lines
+	rasterizationStateCreateInfo.cullMode                = VK_CULL_MODE_BACK_BIT;   // type of face culling
+	rasterizationStateCreateInfo.frontFace               = VK_FRONT_FACE_CLOCKWISE; // vertex order for faces to be considered front-face
+	// the depth value can be altered by adding a constant value based on fragment slope
+	rasterizationStateCreateInfo.depthBiasEnable         = VK_FALSE;
+	rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
+	rasterizationStateCreateInfo.depthBiasClamp          = 0.0f;
+	rasterizationStateCreateInfo.depthBiasSlopeFactor    = 0.0f;
+
+	// multisampling
+	VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+	multisampleStateCreateInfo.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampleStateCreateInfo.sampleShadingEnable   = VK_FALSE;
+	multisampleStateCreateInfo.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
+	multisampleStateCreateInfo.minSampleShading      = 1.0f;
+	multisampleStateCreateInfo.pSampleMask           = nullptr;
+	multisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+	multisampleStateCreateInfo.alphaToOneEnable      = VK_FALSE;
+
+	// no depth and stencil testing for now
+
+	// color blending
+	// configuration per attached framebuffer
+	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable         = VK_TRUE;
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	colorBlendAttachment.colorBlendOp        = VK_BLEND_OP_ADD;
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.alphaBlendOp        = VK_BLEND_OP_ADD;
+	// the above config does the following
+	// finalColor.rgb = newAlpha * newColor + (1 - newAlpha) * oldColor;
+	// finalColor.a = newAlpha.a;
+
+	// configuration for global color blending settings
+	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{};
+	colorBlendStateCreateInfo.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlendStateCreateInfo.logicOpEnable     = VK_FALSE;
+	colorBlendStateCreateInfo.logicOp           = VK_LOGIC_OP_COPY;
+	colorBlendStateCreateInfo.attachmentCount   = 1;
+	colorBlendStateCreateInfo.pAttachments      = &colorBlendAttachment;
+	colorBlendStateCreateInfo.blendConstants[0] = 0.0f;
+	colorBlendStateCreateInfo.blendConstants[1] = 0.0f;
+	colorBlendStateCreateInfo.blendConstants[2] = 0.0f;
+	colorBlendStateCreateInfo.blendConstants[3] = 0.0f;
+
+	// pipeline layout
+	// specify uniforms
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+	pipelineLayoutCreateInfo.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutCreateInfo.setLayoutCount         = 0;
+	pipelineLayoutCreateInfo.pSetLayouts            = nullptr;
+	// push constants are another way of passing dynamic values to the shaders
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+	pipelineLayoutCreateInfo.pPushConstantRanges    = nullptr;
+
+	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create graphics pipeline!");
 
 	// once the pipeline creation is complete, the shader modules can be destroyed
-	vkDestroyShaderModule(m_Device, vertexShaderModule, nullptr);
+	vkDestroyShaderModule(m_Device, vertexShaderModule,   nullptr);
 	vkDestroyShaderModule(m_Device, fragmentShaderModule, nullptr);
 }
 
@@ -624,7 +743,7 @@ std::vector<char> Application::LoadShader(const std::string& filepath)
 VkShaderModule Application::CreateShaderModule(const std::vector<char>& code)
 {
 	VkShaderModuleCreateInfo shaderModuleCreateInfo{};
-	shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	shaderModuleCreateInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	shaderModuleCreateInfo.codeSize = code.size();
 	// code is in char but shaderModule expects it to be in uint32_t
 	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
