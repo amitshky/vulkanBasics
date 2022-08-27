@@ -104,6 +104,9 @@ private:
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 	void CreateFramebuffer();
+	void CreateCommandPool();
+	void CreateCommandBuffer();
+	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
 	std::string m_Title;
@@ -136,4 +139,8 @@ private:
 
 	// framebuffer
 	std::vector<VkFramebuffer> m_SwapchainFramebuffer;
+
+	// command buffer
+	VkCommandPool m_CommandPool;
+	VkCommandBuffer m_CommandBuffer;
 };

@@ -197,6 +197,17 @@ OR (using bat scripts from `scripts` folder)
 * framebuffers can only be used with render pass that it is compatible with
 
 
+### Command buffers
+* commands (drawing, memory transfer) in vulkan are not executed directly using function calls, instead, the commands have to be recorded in command buffers
+	* vulkan can more efficiently process the commands since all of them are available together
+* **Command Pools:**
+	* needs to be created before creating command buffers 
+	* manage memory that is used 
+	* command pools can only allocate command buffers that are submitted by a single type of queue
+* command buffers are executed by submitting them on one of the device queues
+* command buffers are automatically freed when their command pool is destroyed
+
+
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)
 
