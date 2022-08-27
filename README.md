@@ -190,6 +190,12 @@ OR (using bat scripts from `scripts` folder)
 	* the subpasses depend on the contents of the framebuffers in the previous passes
 
 
+### Framebuffers
+* binds the attachments created during render pass
+	* references all of the image views (attachments)
+* we have to create framebuffer for all images in the swapchain
+* framebuffers can only be used with render pass that it is compatible with
+
 
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)

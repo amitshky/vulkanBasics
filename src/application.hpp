@@ -103,6 +103,8 @@ private:
 	std::vector<char> LoadShader(const std::string& filepath);
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
+	void CreateFramebuffer();
+
 private:
 	std::string m_Title;
 	int32_t m_Width;
@@ -131,4 +133,7 @@ private:
 	// pipeline
 	VkPipelineLayout m_PipelineLayout;
 	VkPipeline m_GraphicsPipeline;
+
+	// framebuffer
+	std::vector<VkFramebuffer> m_SwapchainFramebuffer;
 };
