@@ -208,6 +208,11 @@ OR (using bat scripts from `scripts` folder)
 * command buffers are automatically freed when their command pool is destroyed
 
 
+### Rendering and Presentation
+* 
+
+
+
 ## References
 * [Vulkan tutorial](https://vulkan-tutorial.com/)
 
