@@ -209,7 +209,25 @@ OR (using bat scripts from `scripts` folder)
 
 
 ### Rendering and Presentation
-* 
+* **Rendering Steps:**
+	* Wait for the previous frame to finish
+	* Acquire an image from the swap chain
+	* Record a command buffer (to draw the scene on to the image)
+	* Submit the recorded command buffer
+	* Present the swap chain image
+
+* Synchronization of operations must be explicitly defined
+* Vulkan API calls are asynchronous
+* But there are some events that need to be in explicit order
+	* like acquiring an image from the swap chain
+* We can use semaphores or fences to order the calls
+* with semaphores, waiting happens in the gpu, with fences, waiting happens in the cpu
+* if the host (cpu) needs to know when the gpu has finished something, a fence is used
+* we use semaphores for swapchain and use fences when waiting for previous frame to finish (so that we dont draw more than on frame at a time)
+
+* Currently we have a single subpass, but there are 2 built-in subpasses that control the image layout transitions (at the start and at the end of the render pass). 
+* The first subpass occurs at the start of the pipeline, but we dont have the image at this point
+* there are 2 ways to deal with this, wait on the `VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT` stage, or `VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT` 
 
 
 

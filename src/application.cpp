@@ -52,7 +52,10 @@ void Application::Run()
 	while (!glfwWindowShouldClose(m_Window))
 	{
 		glfwPollEvents();
+		DrawFrame();
 	}
+
+	vkDeviceWaitIdle(m_Device);
 }
 
 void Application::InitWindow()
@@ -75,13 +78,18 @@ void Application::InitVulkan()
 	CreateImageViews();
 	CreateRenderPass();
 	CreateGraphicsPipeline();
-	CreateFramebuffer();
+	CreateFramebuffers();
 	CreateCommandPool();
 	CreateCommandBuffer();
+	CreateSyncObjects();
 }
 
 void Application::Cleanup()
 {
+	vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore, nullptr);
+	vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore, nullptr);
+	vkDestroyFence(m_Device, m_InFlightFence, nullptr);
+
 	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
 	for (auto framebuffer : m_SwapchainFramebuffer)
@@ -128,7 +136,7 @@ void Application::CreateVulkanInstance()
 	// we need extensions to interface with the window
 	uint32_t extensionCount = 0;
 	auto extensions = GetRequiredExtensions();  // returns a required list of extensions based on whether validation layers are enabled or not
-	instanceCreateInfo.enabledExtensionCount   = extensions.size();
+	instanceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
 	instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
 	// debug messenger
 	VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
@@ -364,7 +372,6 @@ void Application::CreateLogicalDevice()
 	deviceCreateInfo.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	deviceCreateInfo.pQueueCreateInfos    = queueCreateInfos.data();
-	deviceCreateInfo.queueCreateInfoCount = 1;
 	deviceCreateInfo.pEnabledFeatures     = &deviceFeatures;
 
 	// these are similar to create instance but they are device specific this time
@@ -438,7 +445,6 @@ SwapchainSupportDetails Application::QuerySwapchainSupport(VkPhysicalDevice phys
 	{
 		swapchainDetails.presentModes.resize(presentModeCount);
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_WindowSurface, &presentModeCount, swapchainDetails.presentModes.data());
-
 	}
 
 	return swapchainDetails;
@@ -531,9 +537,7 @@ void Application::CreateSwapchain()
 	}
 	else
 	{
-		swapchainCreateInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;  //image owned by one queue family at a time
-		swapchainCreateInfo.queueFamilyIndexCount = 0;                          // optional
-		swapchainCreateInfo.pQueueFamilyIndices   = 0;                          // optional
+		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;  //image owned by one queue family at a time
 	}
 
 	swapchainCreateInfo.preTransform   = swapchainSupport.capabilities.currentTransform;  // we can rotate, flip, etc
@@ -558,7 +562,7 @@ void Application::CreateImageViews()
 {
 	m_SwapchainImageviews.resize(m_SwapchainImages.size());
 
-	for (int i = 0; i < m_SwapchainImages.size(); ++i)
+	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
 		VkImageViewCreateInfo imageViewCreateInfo{};
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -594,8 +598,8 @@ void Application::CreateRenderPass()
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;  // we dont have multisampling yet
 	// determining what to do with the data in the attachment
 	// for color and depth data
-	colorAttachment.loadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.loadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	// for stencil data
 	colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -616,6 +620,16 @@ void Application::CreateRenderPass()
 	// the index of the attachment in this array is directly referenced from the fragment shader // layout (location=0) out vec4 outColor
 	subpass.pColorAttachments    = &colorAttachmentRef;
 
+	// subpass dependencies control the image layout transitions
+	VkSubpassDependency subpassDependency{};
+	subpassDependency.srcSubpass    = VK_SUBPASS_EXTERNAL; // implicit subpass before and after the render pass
+	subpassDependency.dstSubpass    = 0; // our subpass
+	// specify the operation to wait on
+	subpassDependency.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpassDependency.srcAccessMask = 0;
+	subpassDependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 	// render pass
 	VkRenderPassCreateInfo renderPassCreateInfo{};
 	renderPassCreateInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -623,6 +637,9 @@ void Application::CreateRenderPass()
 	renderPassCreateInfo.pAttachments    = &colorAttachment;
 	renderPassCreateInfo.subpassCount    = 1;
 	renderPassCreateInfo.pSubpasses      = &subpass;
+	renderPassCreateInfo.dependencyCount = 1;
+	renderPassCreateInfo.pDependencies   = &subpassDependency;
+
 
 	if (vkCreateRenderPass(m_Device, &renderPassCreateInfo, nullptr, &m_RenderPass) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create render pass!");
@@ -671,27 +688,11 @@ void Application::CreateGraphicsPipeline()
 	inputAssemblyCreateInfo.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	inputAssemblyCreateInfo.primitiveRestartEnable = VK_FALSE;
 
-	// viewport
-	VkViewport viewport{};
-	viewport.x        = 0.0f;
-	viewport.y        = 0.0f;
-	viewport.width    = static_cast<float>(m_SwapchainExtent.width);
-	viewport.height   = static_cast<float>(m_SwapchainExtent.width);
-	viewport.minDepth = 0.0f; // range of depth values for framebuffer
-	viewport.maxDepth = 1.0f;
-
-	// scissor
-	VkRect2D scissor{};
-	scissor.offset = { 0, 0 };
-	scissor.extent = m_SwapchainExtent;
-
 	// viewport state
 	VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
 	viewportStateCreateInfo.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportStateCreateInfo.viewportCount = 1;
-	viewportStateCreateInfo.pViewports    = &viewport;
 	viewportStateCreateInfo.scissorCount  = 1;
-	viewportStateCreateInfo.pScissors     = &scissor;
 
 	// rasterizer
 	VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
@@ -724,28 +725,16 @@ void Application::CreateGraphicsPipeline()
 	// configuration per attached framebuffer
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable         = VK_TRUE;
-	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	colorBlendAttachment.colorBlendOp        = VK_BLEND_OP_ADD;
-	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.alphaBlendOp        = VK_BLEND_OP_ADD;
+	colorBlendAttachment.blendEnable         = VK_FALSE;
+	//colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	//colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	//colorBlendAttachment.colorBlendOp        = VK_BLEND_OP_ADD;
+	//colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	//colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	//colorBlendAttachment.alphaBlendOp        = VK_BLEND_OP_ADD;
 	// the above config does the following
 	// finalColor.rgb = newAlpha * newColor + (1 - newAlpha) * oldColor;
 	// finalColor.a = newAlpha.a;
-
-	// dynamic states
-	// allows you to specify the data at drawing time
-	std::vector<VkDynamicState> dynamicStates{
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-	};
-
-	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
-	dynamicStateCreateInfo.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-	dynamicStateCreateInfo.pDynamicStates    = dynamicStates.data();
 
 	// configuration for global color blending settings
 	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{};
@@ -758,6 +747,18 @@ void Application::CreateGraphicsPipeline()
 	colorBlendStateCreateInfo.blendConstants[1] = 0.0f;
 	colorBlendStateCreateInfo.blendConstants[2] = 0.0f;
 	colorBlendStateCreateInfo.blendConstants[3] = 0.0f;
+
+	// dynamic states
+	// allows you to specify the data at drawing time
+	std::vector<VkDynamicState> dynamicStates{
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+	dynamicStateCreateInfo.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	dynamicStateCreateInfo.pDynamicStates    = dynamicStates.data();
 
 	// pipeline layout
 	// specify uniforms
@@ -837,13 +838,13 @@ VkShaderModule Application::CreateShaderModule(const std::vector<char>& code)
 	return shaderModule;
 }
 
-void Application::CreateFramebuffer()
+void Application::CreateFramebuffers()
 {
 	m_SwapchainFramebuffer.resize(m_SwapchainImageviews.size());
 
 	for (size_t i = 0; i < m_SwapchainImageviews.size(); ++i)
 	{
-		VkImageView attachment[] = {
+		VkImageView attachments[] = {
 			m_SwapchainImageviews[i]
 		};
 
@@ -851,7 +852,7 @@ void Application::CreateFramebuffer()
 		framebufferCreateInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferCreateInfo.renderPass      = m_RenderPass;
 		framebufferCreateInfo.attachmentCount = 1;
-		framebufferCreateInfo.pAttachments    = attachment;
+		framebufferCreateInfo.pAttachments    = attachments;
 		framebufferCreateInfo.width           = m_SwapchainExtent.width;
 		framebufferCreateInfo.height          = m_SwapchainExtent.height;
 		framebufferCreateInfo.layers          = 1;
@@ -883,7 +884,7 @@ void Application::CreateCommandBuffer()
 	commandBufferAllocateInfo.commandBufferCount = 1;
 
 	if (vkAllocateCommandBuffers(m_Device, &commandBufferAllocateInfo, &m_CommandBuffer) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create command buffer allocator info!");
+		throw std::runtime_error("Failed to allocate command buffers!");
 }
 
 void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -903,7 +904,7 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = m_SwapchainExtent;
 
-	VkClearValue clearColor          = {{{ 0.01f, 0.01f, 0.01f, 1.0f }}};
+	VkClearValue clearColor          = {{{ 0.0f, 0.0f, 0.0f, 1.0f }}};
 	renderPassInfo.clearValueCount   = 1;
 	renderPassInfo.pClearValues      = &clearColor;
 
@@ -916,8 +917,8 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	VkViewport viewport{};
 	viewport.x        = 0.0f;
 	viewport.y        = 0.0f;
-	viewport.width    = static_cast<float>(m_SwapchainExtent.width);
-	viewport.height   = static_cast<float>(m_SwapchainExtent.height);
+	viewport.width    = (float) m_SwapchainExtent.width;
+	viewport.height   = (float) m_SwapchainExtent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(m_CommandBuffer, 0, 1, &viewport);
@@ -934,4 +935,70 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 
 	if (vkEndCommandBuffer(m_CommandBuffer) != VK_SUCCESS)
 		throw std::runtime_error("Failed to record command buffer!");
+}
+
+void Application::CreateSyncObjects()
+{
+	VkSemaphoreCreateInfo semaphoreCreateInfo{};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fenceCreateInfo{};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // create the fence in signaled state so that the frame cant wait on it
+
+	if (vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphore) != VK_SUCCESS || 
+		vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_InFlightFence) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create Semaphores!");
+}
+
+void Application::DrawFrame()
+{
+	// waiting for previous frame
+	// but since the first frame doesnt have a previous frame to wait on, the fence is created in the signaled state
+	vkWaitForFences(m_Device, 1, &m_InFlightFence, VK_TRUE, UINT64_MAX);
+	// reset the fence to unsignaled state
+	vkResetFences(m_Device, 1, &m_InFlightFence);
+
+	// acquire image from the swapchain
+	uint32_t imageIndex; // index of the next swapchain image
+	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+	// record the command buffer
+	vkResetCommandBuffer(m_CommandBuffer, 0);
+	RecordCommandBuffer(m_CommandBuffer, imageIndex);
+	
+	// submit the command buffer
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore }; // semaphore to be waited before execution
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // stage of the pipeline to wait; wait writing colors to the image until it is available
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores    = waitSemaphores;
+	submitInfo.pWaitDstStageMask  = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers    = &m_CommandBuffer; // command buffer to be submitted for execution
+	VkSemaphore signalSemaphores[]  = { m_RenderFinishedSemaphore };
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores    = signalSemaphores;
+
+	// signal the fence after executing the command buffer
+	if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFence) != VK_SUCCESS)
+		throw std::runtime_error("Failed to submit draw command buffer!");
+
+	// submit the result back to the swapchain to render on the screen
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores    = signalSemaphores;
+
+	// swapchain images and the indexes
+	VkSwapchainKHR swapchains[] = { m_Swapchain };
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains    = swapchains;
+	presentInfo.pImageIndices  = &imageIndex;
+
+	presentInfo.pResults = nullptr; // check for every individual swapchain if presentation was successful
+	vkQueuePresentKHR(m_PresentQueue, &presentInfo);
 }

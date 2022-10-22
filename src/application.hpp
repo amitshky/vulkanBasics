@@ -103,10 +103,14 @@ private:
 	std::vector<char> LoadShader(const std::string& filepath);
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
-	void CreateFramebuffer();
+	void CreateFramebuffers();
 	void CreateCommandPool();
 	void CreateCommandBuffer();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+	void CreateSyncObjects();
+
+	void DrawFrame();
 
 private:
 	std::string m_Title;
@@ -143,4 +147,10 @@ private:
 	// command buffer
 	VkCommandPool m_CommandPool;
 	VkCommandBuffer m_CommandBuffer;
+
+	// synchronization objects
+	// semaphores to sync gpu operations and fence to sync cpu operation with the gpu operation
+	VkSemaphore m_ImageAvailableSemaphore;
+	VkSemaphore m_RenderFinishedSemaphore;
+	VkFence m_InFlightFence;
 };
