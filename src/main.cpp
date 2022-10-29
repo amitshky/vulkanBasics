@@ -8,7 +8,7 @@
 
 int main()
 {
-	Application* app = new Application("Vulkan basics", 800, 600);
+	Application* app = new Application{"Vulkan basics", 800, 600};
 
 	try
 	{

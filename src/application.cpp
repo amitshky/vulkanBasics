@@ -92,7 +92,7 @@ void Application::Cleanup()
 
 	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
-	for (auto framebuffer : m_SwapchainFramebuffer)
+	for (auto framebuffer : m_SwapchainFramebuffers)
 		vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
 
 	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
@@ -385,7 +385,7 @@ void Application::CreateLogicalDevice()
 	}
 	else
 	{
-		deviceCreateInfo.enabledExtensionCount = 0;
+		deviceCreateInfo.enabledLayerCount = 0;
 	}
 
 	if (vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, nullptr, &m_Device) != VK_SUCCESS)
@@ -547,7 +547,7 @@ void Application::CreateSwapchain()
 	swapchainCreateInfo.oldSwapchain   = VK_NULL_HANDLE;                                  // if new swapchain is to be created, the old one should be referenced here
 
 	if (vkCreateSwapchainKHR(m_Device, &swapchainCreateInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create Swap chain!");
+		throw std::runtime_error("Failed to create Swapchain!");
 
 	// get swapchain images
 	vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &imageCount, nullptr);
@@ -840,7 +840,7 @@ VkShaderModule Application::CreateShaderModule(const std::vector<char>& code)
 
 void Application::CreateFramebuffers()
 {
-	m_SwapchainFramebuffer.resize(m_SwapchainImageviews.size());
+	m_SwapchainFramebuffers.resize(m_SwapchainImageviews.size());
 
 	for (size_t i = 0; i < m_SwapchainImageviews.size(); ++i)
 	{
@@ -857,7 +857,7 @@ void Application::CreateFramebuffers()
 		framebufferCreateInfo.height          = m_SwapchainExtent.height;
 		framebufferCreateInfo.layers          = 1;
 
-		if (vkCreateFramebuffer(m_Device, &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffer[i]) != VK_SUCCESS)
+		if (vkCreateFramebuffer(m_Device, &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create framebuffer!");
 	}
 }
@@ -900,7 +900,7 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass        = m_RenderPass;
-	renderPassInfo.framebuffer       = m_SwapchainFramebuffer[imageIndex];
+	renderPassInfo.framebuffer       = m_SwapchainFramebuffers[imageIndex];
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = m_SwapchainExtent;
 
@@ -917,8 +917,8 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	VkViewport viewport{};
 	viewport.x        = 0.0f;
 	viewport.y        = 0.0f;
-	viewport.width    = (float) m_SwapchainExtent.width;
-	viewport.height   = (float) m_SwapchainExtent.height;
+	viewport.width    = static_cast<float>(m_SwapchainExtent.width);
+	viewport.height   = static_cast<float>(m_SwapchainExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(m_CommandBuffer, 0, 1, &viewport);

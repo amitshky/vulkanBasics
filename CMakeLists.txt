@@ -14,12 +14,12 @@ if(MSVC)
 
 elseif(GNU OR Clang)
 	set(GCC_CLANG_COMPILE_OPTIONS "-Wall;-Wextra;")
-	set(GCC_CLANG_COMPILE_OPTIONS_DEBUG "-g;-O0")
-	set(GCC_CLANG_COMPILE_OPTIONS_RELEASE "-O3")
+	set(GCC_CLANG_COMPILE_OPTIONS_DEBUG "-g;-O0;")
+	set(GCC_CLANG_COMPILE_OPTIONS_RELEASE "-O3;")
 
 	target_compile_options(${PROJECT_NAME} PUBLIC ${GCC_CLANG_COMPILE_OPTIONS})
-	target_compile_options(${PROJECT_NAME} PUBLIC $<CONFIG:Debug>:${GCC_CLANG_COMPILE_OPTIONS_DEBUG})
-	target_compile_options(${PROJECT_NAME} PUBLIC $<CONFIG:Release>:${GCC_CLANG_COMPILE_OPTIONS_RELEASE})
+	target_compile_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:${GCC_CLANG_COMPILE_OPTIONS_DEBUG}>)
+	target_compile_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:${GCC_CLANG_COMPILE_OPTIONS_RELEASE}>)
 
 	if (LINUX)
 		target_link_libraries(${PROJECT_NAME} PUBLIC pthreads)

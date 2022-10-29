@@ -142,7 +142,7 @@ private:
 	VkPipeline m_GraphicsPipeline;
 
 	// framebuffer
-	std::vector<VkFramebuffer> m_SwapchainFramebuffer;
+	std::vector<VkFramebuffer> m_SwapchainFramebuffers;
 
 	// command buffer
 	VkCommandPool m_CommandPool;

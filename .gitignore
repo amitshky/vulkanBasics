@@ -7,6 +7,9 @@ build/
 # SPIR-V files
 *.spv
 
+### Visual studio files ###
+.vs/
+
 ### vscode ###
 .vscode/*
 !.vscode/settings.json
