@@ -211,3 +211,13 @@
 * Currently we have a single subpass, but there are 2 built-in subpasses that control the image layout transitions (at the start and at the end of the render pass). 
 * The first subpass occurs at the start of the pipeline, but we dont have the image at this point
 * there are 2 ways to deal with this, wait on the `VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT` stage, or `VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT` 
+
+
+## Frames in flight
+* Currently, we wait for the previous frame to finish before we start rendering the next frame
+	* keeps the host waiting unnecessarily
+* We want to allow multiple frames to be *in-flight* at once
+	* rendering of one frame to not interfere with recording of the other
+* all the resources that is accessed and modified during rendering must be duplicated
+* we need multiple command buffers, semaphores and fences
+	* each frame should have its own command buffer, set of semaphores, and fences.

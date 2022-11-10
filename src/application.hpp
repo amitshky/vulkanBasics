@@ -23,6 +23,8 @@ const std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, 
 	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
@@ -146,11 +148,14 @@ private:
 
 	// command buffer
 	VkCommandPool m_CommandPool;
-	VkCommandBuffer m_CommandBuffer;
+	std::vector<VkCommandBuffer> m_CommandBuffers;
 
 	// synchronization objects
 	// semaphores to sync gpu operations and fence to sync cpu operation with the gpu operation
-	VkSemaphore m_ImageAvailableSemaphore;
-	VkSemaphore m_RenderFinishedSemaphore;
-	VkFence m_InFlightFence;
+	std::vector<VkSemaphore> m_ImageAvailableSemaphores;
+	std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+	std::vector<VkFence> m_InFlightFences;
+
+	// frames in-flight
+	uint32_t m_CurrentFrameIdx = 0;
 };
