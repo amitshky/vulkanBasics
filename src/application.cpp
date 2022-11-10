@@ -138,14 +138,15 @@ void Application::CreateVulkanInstance()
 	auto extensions = GetRequiredExtensions();  // returns a required list of extensions based on whether validation layers are enabled or not
 	instanceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
 	instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
-	// debug messenger
-	VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
+	
 	// specify global validation layers
 	if (enableValidationLayers) // include validation layers if enabled
 	{
 		instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		instanceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 
+		// debug messenger
+		VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
 		PopulateDebugMessengerCreateInfo(debugMessengerInfo);
 		instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugMessengerInfo;
 	} 
@@ -176,9 +177,9 @@ bool Application::CheckValidationLayerSupport()
 {
 	// check if all of the requested layers are available
 	uint32_t validationLayerCount = 0;
-	vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
+	vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr); // get validation layer count
 	std::vector<VkLayerProperties> availableLayers{validationLayerCount};
-	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data());
+	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data()); // get the available validation layers
 	
 	for (const auto& layer : validationLayers)
 	{
@@ -257,7 +258,7 @@ void Application::SetupDebugMessenger()
 void Application::PickPhysicalDevice()
 {
 	uint32_t physicalDeviceCount = 0;
-	vkEnumeratePhysicalDevices(m_VulkanInstance, &physicalDeviceCount, nullptr);
+	vkEnumeratePhysicalDevices(m_VulkanInstance, &physicalDeviceCount, nullptr); // get physical device count
 
 	if (physicalDeviceCount == 0)
 		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
@@ -293,10 +294,10 @@ bool Application::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
 {
 	QueueFamilyIndices indicies = FindQueueFamilies(physicalDevice);
 
-	// checking for extension availability like swap chain extension availability
+	// checking for extension availability like swapchain extension availability
 	bool extensionsSupported = CheckDeviceExtensionSupport(physicalDevice);
 
-	// checking if swap chain supported by window surface
+	// checking if swapchain is supported by window surface
 	bool swapchainAdequate = false;
 	if (extensionsSupported)
 	{
@@ -420,13 +421,13 @@ bool Application::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
 
 SwapchainSupportDetails Application::QuerySwapchainSupport(VkPhysicalDevice physicalDevice)
 {
-	// Simply checking swap chain availability is not enough, 
+	// Simply checking swapchain availability is not enough, 
 	// we need to check if it is supported by our window surface or not
 	// We need to check for:
 	// * basic surface capabilities (min/max number of images in swap chain)
 	// * surface formats (pixel format and color space)
 	// * available presentation modes
-	SwapchainSupportDetails swapchainDetails;
+	SwapchainSupportDetails swapchainDetails{};
 
 	// query surface capabilities
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_WindowSurface, &swapchainDetails.capabilities);
@@ -523,7 +524,7 @@ void Application::CreateSwapchain()
 	swapchainCreateInfo.imageColorSpace  = surfaceFormat.colorSpace;
 	swapchainCreateInfo.imageExtent      = extent;
 	swapchainCreateInfo.imageArrayLayers = 1; // number of layers in each image
-	swapchainCreateInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapchainCreateInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // what kind of operation the images in the swap chain be used for
 
 	// handle swapchain images across multiple queue families
 	QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
@@ -540,7 +541,7 @@ void Application::CreateSwapchain()
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;  //image owned by one queue family at a time
 	}
 
-	swapchainCreateInfo.preTransform   = swapchainSupport.capabilities.currentTransform;  // we can rotate, flip, etc
+	swapchainCreateInfo.preTransform   = swapchainSupport.capabilities.currentTransform;  // we can rotate, flip, etc // we can specify that certain transformation can be applied
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;               // specify if alpha channel is used for blending
 	swapchainCreateInfo.presentMode    = presentMode;
 	swapchainCreateInfo.clipped        = VK_TRUE;
@@ -598,24 +599,24 @@ void Application::CreateRenderPass()
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;  // we dont have multisampling yet
 	// determining what to do with the data in the attachment
 	// for color and depth data
-	colorAttachment.loadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.loadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;  // clear the framebuffer before drawing the next frame
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store the rendered contents in the memory
 	// for stencil data
 	colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	// the textures and framebuffer are represented by `VkImage`, with a certain pixel format
 	// the layout of the pixel format can be changed based on what you're trying to do
-	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;        // we don't care about the previous layout of the image
-	colorAttachment.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;  // the image should be ready for presentation using swapchain
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;       // we don't care about the previous layout of the image (before the render pass begins)
+	colorAttachment.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // the image to be presented in the swapchain (when the render pass finishes)
 
 	// attachment references
 	VkAttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment = 0; // index of attachment ot reference
+	colorAttachmentRef.attachment = 0; // index of attachment
 	colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	
 	// subpass
 	VkSubpassDescription subpass{};
-	subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS; // graphics subpass
 	subpass.colorAttachmentCount = 1;
 	// the index of the attachment in this array is directly referenced from the fragment shader // layout (location=0) out vec4 outColor
 	subpass.pColorAttachments    = &colorAttachmentRef;
@@ -701,7 +702,7 @@ void Application::CreateGraphicsPipeline()
 	rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;                // if true, the geometry never passes through rasterizer stage
 	rasterizationStateCreateInfo.polygonMode             = VK_POLYGON_MODE_FILL;    // how fragments are generated
 	rasterizationStateCreateInfo.lineWidth               = 1.0f;                    // thickness of lines
-	rasterizationStateCreateInfo.cullMode                = VK_CULL_MODE_BACK_BIT;   // type of face culling
+	rasterizationStateCreateInfo.cullMode                = VK_CULL_MODE_BACK_BIT;   // type of face culling; cull the back face
 	rasterizationStateCreateInfo.frontFace               = VK_FRONT_FACE_CLOCKWISE; // vertex order for faces to be considered front-face
 	// the depth value can be altered by adding a constant value based on fragment slope
 	rasterizationStateCreateInfo.depthBiasEnable         = VK_FALSE;
@@ -791,7 +792,7 @@ void Application::CreateGraphicsPipeline()
 	graphicsPipelineCreateInfo.layout              = m_PipelineLayout;
 	graphicsPipelineCreateInfo.renderPass          = m_RenderPass;
 	graphicsPipelineCreateInfo.subpass             = 0;
-	// pipeline can be created by derivin from a previous pipeline
+	// pipeline can be created by deriving from a previous pipeline
 	// less expensive to set up a pipeline if it has common functionality with an existing pipeline
 	graphicsPipelineCreateInfo.basePipelineHandle  = VK_NULL_HANDLE;
 	graphicsPipelineCreateInfo.basePipelineIndex   = -1;
@@ -803,6 +804,7 @@ void Application::CreateGraphicsPipeline()
 
 
 	// once the pipeline creation is complete, the shader modules can be destroyed
+	// because SPIR-V bytecode and machine code are linked after the graphics pipeline is created
 	vkDestroyShaderModule(m_Device, vertexShaderModule,   nullptr);
 	vkDestroyShaderModule(m_Device, fragmentShaderModule, nullptr);
 }
@@ -868,8 +870,8 @@ void Application::CreateCommandPool()
 
 	VkCommandPoolCreateInfo commandPoolCreateInfo{};
 	commandPoolCreateInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;  // allows command buffers to be recorded individually
-	commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();        // command pools can only allocate command buffers that are submitted by a single type of queue
+	commandPoolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // allows command buffers to be recorded individually
+	commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();       // command pools can only allocate command buffers that are submitted by a single type of queue
 
 	if (vkCreateCommandPool(m_Device, &commandPoolCreateInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create command pools!");
@@ -877,6 +879,7 @@ void Application::CreateCommandPool()
 
 void Application::CreateCommandBuffer()
 {
+	// command buffer allocation
 	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
 	commandBufferAllocateInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	commandBufferAllocateInfo.commandPool        = m_CommandPool;
@@ -897,21 +900,21 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	if (vkBeginCommandBuffer(m_CommandBuffer, &commandBufferBeginInfo) != VK_SUCCESS)
 		throw std::runtime_error("Failed to begin recording command buffer!");
 
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass        = m_RenderPass;
-	renderPassInfo.framebuffer       = m_SwapchainFramebuffers[imageIndex];
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = m_SwapchainExtent;
+	VkRenderPassBeginInfo renderPassBeginInfo{};
+	renderPassBeginInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass        = m_RenderPass;
+	renderPassBeginInfo.framebuffer       = m_SwapchainFramebuffers[imageIndex];
+	renderPassBeginInfo.renderArea.offset = { 0, 0 };
+	renderPassBeginInfo.renderArea.extent = m_SwapchainExtent;
 
-	VkClearValue clearColor          = {{{ 0.0f, 0.0f, 0.0f, 1.0f }}};
-	renderPassInfo.clearValueCount   = 1;
-	renderPassInfo.pClearValues      = &clearColor;
+	VkClearValue clearColor             = {{{ 0.0f, 0.0f, 0.0f, 1.0f }}};
+	renderPassBeginInfo.clearValueCount = 1;
+	renderPassBeginInfo.pClearValues    = &clearColor;
 
 	// the render pass commands will be embedded in the primary command buffer itself and no secondary command buffers will be executed
 	// we don't use a second command buffers
 	// start render pass
-	vkCmdBeginRenderPass(m_CommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(m_CommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 	VkViewport viewport{};
@@ -944,7 +947,10 @@ void Application::CreateSyncObjects()
 
 	VkFenceCreateInfo fenceCreateInfo{};
 	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // create the fence in signaled state so that the frame cant wait on it
+	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // create the fence in signaled state so that the firest frame doesnt have to wait
+
+	// m_ImageAvailableSemaphore: used to acquire swapchain images
+	// m_RenderFinishedSemaphore: signaled when command buffers have finished execution
 
 	if (vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphore) != VK_SUCCESS ||
 		vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphore) != VK_SUCCESS || 
@@ -995,10 +1001,11 @@ void Application::DrawFrame()
 
 	// swapchain images and the indexes
 	VkSwapchainKHR swapchains[] = { m_Swapchain };
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains    = swapchains;
-	presentInfo.pImageIndices  = &imageIndex;
+	presentInfo.swapchainCount  = 1;
+	presentInfo.pSwapchains     = swapchains;
+	presentInfo.pImageIndices   = &imageIndex;
+	presentInfo.pResults        = nullptr; // check for every individual swapchain if presentation was successful
 
-	presentInfo.pResults = nullptr; // check for every individual swapchain if presentation was successful
+	// present the swapchain image
 	vkQueuePresentKHR(m_PresentQueue, &presentInfo);
 }

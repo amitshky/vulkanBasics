@@ -6,7 +6,7 @@
 * Create a logical device `VkDevice` to specify which features you want to use (`VkPhysicalDeviceFeatures`)
 * Vulkan commands are executed asynchronously by submitting them to `VkQueue`
 * There are different queue families, each of which supports a specific set of operations
-* We need two more components to render window surface - `VkSurfaceKHR` and `VkSwapchainKHR`
+* We need two more components to render - `VkSurfaceKHR` and `VkSwapchainKHR`
 * Drawing an image requires `VkImageView` and `VkFramebuffer`
 * Render pass determines how the contents of the image should be treated
 * Before Vulkan operations are submitted to the queue, they need to be recorded to `VkCommandBuffer`
@@ -17,7 +17,10 @@
 * All of the useful Standard validation is bundled into `VK_LAYER_KHRONOS_validation`
 * Validation layers log debug messages into standard output by default
 	* This can be changed by providing explicit callback
-* Message callbacks filters logs (you can configure to show certail logs)
+	* This can be achieved by using Debug messengers
+		* The application can describe what type of debug messages and the severity of the messages
+		* A callback function can also be described that gets triggered when a message with the appropriate severity and type is encountered.
+* Message callbacks filters logs (you can configure to show certain logs)
 
 ## Physical device
 * We need to select a physical device that supports the features we need
@@ -28,11 +31,13 @@
 * Each family of queues only allows a subset of commands
 
 ## Logical device and queues
+* Vulkan exposes the device to the application
+* logical devices are representations of the actual device in the application view
 * Specify which queues to create after querying queue families
 * Currently available drivers will only allow to create a small number of queues for each queue family
 	* You don't really need more than one
 * We can create all of the command buffers on multiple threads and then submit them all at once on the main thread
-* You can assign priorities to the queues
+* You can assign priorities to the queues which influence command scheduling
 * Queues are automatically created with the logical device
 	* Device queues are implicitly destroyed when the device is destroyed
 
@@ -48,7 +53,8 @@
 
 ## Swap chain
 * Vulkan doesn't have a default framebuffer
-* It is a queue of images waiting to be rendered on the screen
+* Swapchain is a queue of images waiting to be rendered on the screen
+* Swapchain is used to synchronize the presentation of images in with the refresh rate of the screen
 * All graphics cards cannot render images directly to the screen
 	* So no such functionality in Vulkan core
 	* We need to enable `VK_KHR_swapchain` device extension
@@ -72,19 +78,20 @@
 	* match the resolution of the window and the swap chain images
 
 ## Image views
+* Image views have to be created to use any images (including the one in the swap chain)
 * To view an image; access the image and which part of the image to access
 
 
 ## Graphics Pipeline
 * They are a sequence of operations that take the vertices and textures of your meshes all the way to the pixels in the render targets.
-* vertex/index buffer > input assembler > vertex shader > tessellation > geometry shader > rasterization > fragment shader > color blending > framebuffer.
-	* **input assembler:** collects raw vertex data from the buffers
-	* **vertex shader:** run for every vertex and generally applies transfomrations to turn vertex positions from model space to screen space
-	* **tessellation shaders:** allows you to subdivide geometry based on certain rules to increase the mesh quality
-	* **geometry shader:** runs on every primitive (triangle, line, point) and can discard it or output more primitives. (not used much nowadays)
-	* **rasterization:** discretizes the primitives into fragments; any fragment that fall outside the screen are discarded; the attributes outputted by the vertex shader are interpolated across the fragments
-	* **fragment shader:** run for every fragment; determines which framebuffer the fragments are written to and with which color and depth values
-	* **color blending:** mix different fragments that map to the same pixel in the framebuffer
+	<img src="img/graphicsPipeline.png" width=250>
+* **input assembler:** collects raw vertex data from the buffers
+* **vertex shader:** run for every vertex and generally applies transfomrations to turn vertex positions from model space to screen space
+* **tessellation shaders:** allows you to subdivide geometry based on certain rules to increase the mesh quality
+* **geometry shader:** runs on every primitive (triangle, line, point) and can discard it or output more primitives. (not used much nowadays)
+* **rasterization:** discretizes the primitives into fragments (pixels to that are filled on the framebuffer); any fragment that fall outside the screen are discarded; the attributes outputted by the vertex shader are interpolated across the fragments
+* **fragment shader:** run for every fragment; determines which framebuffer the fragments are written to and with which color and depth values
+* **color blending:** mix different fragments that map to the same pixel in the framebuffer
 
 
 ## Shader modules
@@ -106,8 +113,11 @@
 
 
 ## Fixed functions
+* Older graphics APIs provided default states for most of the pipeline stages. But in vulkan you have to be explicit about it
 * **Dynamic state:**
-	* most of the pipeline states have to be baked into the pipeline state, there are some that can be changed without recreating the pipeline at draw time
+	* most of the pipeline states have to be baked into the pipeline state, there are some that can be changed without recreating the pipeline at draw time (size of viewport, line width, blend constants)
+	* those states are called dynamic states
+	* this causes the configuration of those states to be ignored and we can specify the data at draw time
 
 * **Vertex Input:**
 	* format of the vertex data
@@ -153,11 +163,13 @@
 
 
 ## Render pass
-* specify framebuffers that will be used while rendering
-	* specify color, depth buffers, samples
-* before finishing pipeline creation
+* Render passes contain information about
+	* framebuffer attachments that will be used during rendering
+	* no. of color and depth buffers, no. of samples for each of them, and how they should be handled
 * **Subpasses and attachment references**
 	* a single render pass can consist of multiple render passes
+	* subpasses are subsequent rendering operations and depend on the contents of the previous render passes
+	* vulkan can reorder the rendering operations and conserve memory bandwidth, if we group the rendering operations into one render pass
 	* the subpasses depend on the contents of the framebuffers in the previous passes
 
 
@@ -173,7 +185,7 @@
 	* vulkan can more efficiently process the commands since all of them are available together
 * **Command Pools:**
 	* needs to be created before creating command buffers 
-	* manage memory that is used 
+	* manage memory that is used to store the buffers
 	* command pools can only allocate command buffers that are submitted by a single type of queue
 * command buffers are executed by submitting them on one of the device queues
 * command buffers are automatically freed when their command pool is destroyed
