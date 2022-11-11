@@ -111,8 +111,12 @@ private:
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 	void CreateSyncObjects();
-
 	void DrawFrame();
+
+	void CleanupSwapchain();
+	void RecreateSwapchain();
+	
+	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 private:
 	std::string m_Title;
@@ -158,4 +162,7 @@ private:
 
 	// frames in-flight
 	uint32_t m_CurrentFrameIdx = 0;
+
+	// check for resize
+	bool m_FramebufferResized = false;
 };

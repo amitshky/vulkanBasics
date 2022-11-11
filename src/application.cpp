@@ -62,9 +62,12 @@ void Application::InitWindow()
 {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	m_Window = glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
+
+	glfwSetWindowUserPointer(m_Window, this); // glfw doesnt call the member function with the right `this`
+	glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
 }
 
 void Application::InitVulkan()
@@ -86,6 +89,8 @@ void Application::InitVulkan()
 
 void Application::Cleanup()
 {
+	CleanupSwapchain();
+
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
 		vkDestroySemaphore(m_Device, m_ImageAvailableSemaphores[i], nullptr);
@@ -93,19 +98,11 @@ void Application::Cleanup()
 		vkDestroyFence(m_Device, m_InFlightFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
-
-	for (auto framebuffer : m_SwapchainFramebuffers)
-		vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
-
 	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 
-	for (const auto& imageView : m_SwapchainImageviews)
-		vkDestroyImageView(m_Device, imageView, nullptr);
-
-	vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
+	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 	vkDestroyDevice(m_Device, nullptr);
 
 	if (enableValidationLayers)
@@ -883,7 +880,7 @@ void Application::CreateCommandPool()
 void Application::CreateCommandBuffer()
 {
 	m_CommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	
+
 	// command buffer allocation
 	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
 	commandBufferAllocateInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -975,12 +972,24 @@ void Application::DrawFrame()
 	// waiting for previous frame
 	// but since the first frame doesnt have a previous frame to wait on, the fence is created in the signaled state
 	vkWaitForFences(m_Device, 1, &m_InFlightFences[m_CurrentFrameIdx], VK_TRUE, UINT64_MAX);
-	// reset the fence to unsignaled state
-	vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrameIdx]);
 
 	// acquire image from the swapchain
 	uint32_t imageIndex; // index of the next swapchain image
-	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrameIdx], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrameIdx], VK_NULL_HANDLE, &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) // swapchain is incompatible with the surface and cannot render
+	{
+		RecreateSwapchain();
+		return; // we cannot simply return here, because the queue is never submitted and thus the fences are never signaled , causing a deadlock; to solve this we delay resetting the fences until after we check the swapchain
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) // if suboptimal, the swapchain can still be used to present but the surface properties are no longer the same; this is considered as success here
+	{
+		throw std::runtime_error("Failed to acquire swapchain image!");
+	}
+
+	// resetting the fence has been set after the result has been checked to avoid a deadlock
+	// reset the fence to unsignaled state
+	vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrameIdx]);
 
 	// record the command buffer
 	vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrameIdx], 0);
@@ -1019,8 +1028,59 @@ void Application::DrawFrame()
 	presentInfo.pResults        = nullptr; // check for every individual swapchain if presentation was successful
 
 	// present the swapchain image
-	vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+	result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+
+	// here both suboptimal and out-of-date are considered error and we recreate the swapchain because we want the best possible result
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_FramebufferResized)
+	{
+		m_FramebufferResized = false;
+		RecreateSwapchain();
+	}
+	else if (result != VK_SUCCESS)
+		throw std::runtime_error("Failed to present swapchain image!");
 
 	// increment current frame count
 	m_CurrentFrameIdx = (m_CurrentFrameIdx + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void Application::CleanupSwapchain()
+{
+	for (auto framebuffer : m_SwapchainFramebuffers)
+		vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+
+	for (const auto& imageView : m_SwapchainImageviews)
+		vkDestroyImageView(m_Device, imageView, nullptr);
+
+	vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
+}
+
+void Application::RecreateSwapchain()
+{
+	// window minimized
+	int width  = 0;
+	int height = 0;
+
+	glfwGetFramebufferSize(m_Window, &width, &height);
+	while (width == 0 || height == 0)
+	{
+		// wait while window is minimized
+		glfwGetFramebufferSize(m_Window, &width, &height);
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(m_Device);
+
+	CleanupSwapchain(); // cleanup previous swapchain objects
+
+	// we may have to recreate renderpasses as well if the swapchain's format changes
+
+	CreateSwapchain();
+	CreateImageViews();
+	CreateFramebuffers();
+}
+
+void Application::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+	auto app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+	app->m_FramebufferResized = true;
 }

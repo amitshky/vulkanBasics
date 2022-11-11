@@ -221,3 +221,11 @@
 * all the resources that is accessed and modified during rendering must be duplicated
 * we need multiple command buffers, semaphores and fences
 	* each frame should have its own command buffer, set of semaphores, and fences.
+
+
+## Swapchain recreation
+* if the window size changes, swapchain is no longer compatible with the window surface
+* we need to catch these events and recreate the swapchain
+* Vulkan can notify us when the swapchain is no longer adequete during presentation (`vkAcquireNextImageKHR` and `vkQueuePresentKHR`)
+	* **Out-of-date swapchain:** swapchain incompatible with the surface and cannot be used for rendering
+	* **Suboptimal swapchain** swapchain can still be used to present to the surface but the surface properties are no longer matched
