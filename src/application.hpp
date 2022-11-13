@@ -154,6 +154,9 @@ private:
 	
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
 
+	void CreateVertexBuffer();
+	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
 private:
 	std::string m_Title;
 	int32_t m_Width;
@@ -201,4 +204,7 @@ private:
 
 	// check for resize
 	bool m_FramebufferResized = false;
+
+	VkBuffer m_VertexBuffer;
+	VkDeviceMemory m_VertexBufferMemory;
 };

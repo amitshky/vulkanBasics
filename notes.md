@@ -240,3 +240,7 @@
 
 ### Attribute descriptions
 * how to extract a vertex attribute from a chunk of vertex data
+
+
+## Vertex Buffer creation
+* we have to manage memory for the buffer
