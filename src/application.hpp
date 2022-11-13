@@ -2,10 +2,13 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <optional>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
+#include "glm/glm.hpp"
 
 
 // Validation layers settings
@@ -53,6 +56,39 @@ struct SwapchainSupportDetails
 	VkSurfaceCapabilitiesKHR capabilities;
 	std::vector<VkSurfaceFormatKHR> formats;
 	std::vector<VkPresentModeKHR> presentModes;
+};
+
+struct Vertex
+{
+	glm::vec2 pos;
+	glm::vec3 color;
+
+	static VkVertexInputBindingDescription GetBindingDescription()
+	{
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding   = 0; // specifies the index of the binding in the array of bindings
+		bindingDescription.stride    = sizeof(Vertex); // specifies the number of bytes from one entry to the next
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX; // move to the next data entry after each vertex
+
+		return bindingDescription;
+	}
+
+	static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions()
+	{
+		// for position
+		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+		attributeDescriptions[0].binding  = 0; // index of the per-vertex data
+		attributeDescriptions[0].location = 0; // references the location directive of the input in the vertex shader.
+		attributeDescriptions[0].format   = VK_FORMAT_R32G32_SFLOAT; // type of data; position has 2 floats
+		attributeDescriptions[0].offset   = offsetof(Vertex, pos); // number of bytes from the begining of the per-vertex data
+		// for color
+		attributeDescriptions[1].binding  = 0; // index of the per-vertex data
+		attributeDescriptions[1].location = 1; // references the location directive of the input in the vertex shader.
+		attributeDescriptions[1].format   = VK_FORMAT_R32G32B32_SFLOAT; // type of data; position has 2 floats
+		attributeDescriptions[1].offset   = offsetof(Vertex, color); // number of bytes from the begining of the per-vertex data
+
+		return attributeDescriptions;
+	}
 };
 
 

@@ -229,3 +229,14 @@
 * Vulkan can notify us when the swapchain is no longer adequete during presentation (`vkAcquireNextImageKHR` and `vkQueuePresentKHR`)
 	* **Out-of-date swapchain:** swapchain incompatible with the surface and cannot be used for rendering
 	* **Suboptimal swapchain** swapchain can still be used to present to the surface but the surface properties are no longer matched
+
+
+## Vertex Binding
+### Binding descriptions
+* how to pass the data to vertex shader
+* describe at what rate to input the vertex data
+	* `VK_VERTEX_INPUT_RATE_VERTEX`: Move to the next data entry after each vertex
+	* `VK_VERTEX_INPUT_RATE_INSTANCE`: Move to the next data entry after each instance
+
+### Attribute descriptions
+* how to extract a vertex attribute from a chunk of vertex data

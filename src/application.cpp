@@ -10,6 +10,13 @@
 #include <fstream>
 
 
+// vertex data
+std::vector<Vertex> vertices{
+	{ {  0.0f, 0.5f }, { 1.0f, 0.0f, 0.0f } },
+	{ {  0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f } },
+	{ { -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } }
+};
+
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, 
 	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
 	const VkAllocationCallbacks* pAllocator, 
@@ -675,13 +682,15 @@ void Application::CreateGraphicsPipeline()
 
 	// fixed functions
 	// vertex input
-	// we hard-coded the vertex data so we specify that there is not vertex data for now
+	auto bindingDescription   = Vertex::GetBindingDescription();
+	auto attributeDescription = Vertex::GetAttributeDescriptions();
+
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
 	vertexInputCreateInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputCreateInfo.vertexBindingDescriptionCount   = 0;
-	vertexInputCreateInfo.pVertexBindingDescriptions      = nullptr;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexAttributeDescriptions    = nullptr;
+	vertexInputCreateInfo.vertexBindingDescriptionCount   = 1;
+	vertexInputCreateInfo.pVertexBindingDescriptions      = &bindingDescription;
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescription.size());
+	vertexInputCreateInfo.pVertexAttributeDescriptions    = attributeDescription.data();
 
 	// input assembly
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
