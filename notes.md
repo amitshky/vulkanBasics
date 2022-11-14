@@ -244,3 +244,9 @@
 
 ## Vertex Buffer creation
 * we have to manage memory for the buffer
+
+
+## Staging buffer
+* we create two buffers, a staging buffer (in the CPU), and a vertex buffer (in the device's local memory)
+	* requires transfer queue
+	* transfer operations are also executed using command buffers
