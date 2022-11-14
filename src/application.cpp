@@ -12,10 +12,15 @@
 
 // vertex data
 std::vector<Vertex> vertices{
-	{ {  0.0f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
-	{ {  0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f } },
-	{ { -0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f } }
+	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } }, // 0
+	{ {  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } }, // 1
+	{ {  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f } }, // 2
+	{ { -0.5f,  0.5f }, { 1.0f, 1.0f, 1.0f } }  // 3
 };
+
+// indices for index buffer
+std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
+
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, 
 	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
@@ -91,6 +96,7 @@ void Application::InitVulkan()
 	CreateFramebuffers();
 	CreateCommandPool();
 	CreateVertexBuffer();
+	CreateIndexBuffer();
 	CreateCommandBuffer();
 	CreateSyncObjects();
 }
@@ -110,6 +116,10 @@ void Application::Cleanup()
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 
+	// cleanup index buffer
+	vkDestroyBuffer(m_Device, m_IndexBuffer, nullptr);
+	vkFreeMemory(m_Device, m_IndexBufferMemory, nullptr);
+	// cleanup vertex buffer
 	vkDestroyBuffer(m_Device, m_VertexBuffer, nullptr);
 	vkFreeMemory(m_Device, m_VertexBufferMemory, nullptr);
 
@@ -952,8 +962,10 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	VkBuffer vertexBuffers[] = { m_VertexBuffer };
 	VkDeviceSize offsets[]   = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-	vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+	// the draw command changes if index buffers are used
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 	// end render pass
 	vkCmdEndRenderPass(commandBuffer);
@@ -1216,4 +1228,28 @@ void Application::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
 	vkQueueWaitIdle(m_GraphicsQueue);
 
 	vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &cmdBuff);
+}
+
+void Application::CreateIndexBuffer()
+{
+	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // source memory during transfer
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory); // staging buffer (in the CPU); temporary buffer
+
+	// copy the vertex data to the buffer
+	void* data;
+	vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data); // mapping the buffer memory into CPU accessible memory
+	memcpy(data, indices.data(), (size_t)bufferSize);
+	vkUnmapMemory(m_Device, stagingBufferMemory);
+
+	CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, // destination memory during transfer
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory); // the actual buffer (located in the device memory)
+
+	CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
+
+	vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
+	vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
 }
