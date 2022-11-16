@@ -4,11 +4,14 @@
 #include <vector>
 #include <array>
 #include <optional>
+#include <chrono>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 
 // Validation layers settings
@@ -91,6 +94,15 @@ struct Vertex
 	}
 };
 
+struct UniformBufferObject 
+{
+	// explicitly speicify alignments
+	// because vulkan expects structs to be in a specific alignment with the structs in the shaders
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
+};
+
 
 class Application
 {
@@ -160,6 +172,12 @@ private:
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void CreateIndexBuffer();
 
+	void CreateDescriptorSetLayout();
+	void CreateUniformBuffers();
+	void UpdateUniformBuffer(uint32_t currentFrameIdx);
+	void CreateDescriptorPool();
+	void CreateDescriptorSets();
+
 private:
 	std::string m_Title;
 	int32_t m_Width;
@@ -184,6 +202,15 @@ private:
 
 	// render pass
 	VkRenderPass m_RenderPass;
+
+	// uniform buffer descriptor layout
+	VkDescriptorSetLayout m_DescriptorSetLayout;
+	std::vector<VkBuffer> m_UniformBuffers;
+	std::vector<VkDeviceMemory> m_UniformBuffersMemory;
+	std::vector<void*> m_UniformBuffersMapped;
+	// descriptor pool
+	VkDescriptorPool m_DescriptorPool;
+	std::vector<VkDescriptorSet> m_DescriptorSets;
 
 	// pipeline
 	VkPipelineLayout m_PipelineLayout;

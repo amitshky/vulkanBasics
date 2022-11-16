@@ -250,3 +250,13 @@
 * we create two buffers, a staging buffer (in the CPU), and a vertex buffer (in the device's local memory)
 	* requires transfer queue
 	* transfer operations are also executed using command buffers
+
+
+## Uniform buffers
+* we can use vertex buffers for example, to store MVP matrices, but we would have to update the vertex buffers whenever the transformations change
+* so we use *resource descriptors*, they are a way for the shaders to freely access resources like buffers and images
+* steps:
+	* specify a descriptor layout during pipeline creation
+	* allocate a descriptor set from a descriptor pool
+	* blind the descriptor set during rendering
+* descriptor sets need to be allocated from a pool like command buffers (descriptor pool)
