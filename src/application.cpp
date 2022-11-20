@@ -8,14 +8,15 @@
 #include <algorithm>
 #include <limits>
 #include <fstream>
+#include <cmath>
 
 
 // vertex data
 std::vector<Vertex> vertices{
-	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } }, // 0
-	{ {  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } }, // 1
-	{ {  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f } }, // 2
-	{ { -0.5f,  0.5f }, { 1.0f, 1.0f, 1.0f } }  // 3
+	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } }, // index: 0; position: top-left;     color: red
+	{ {  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } }, // index: 1; position: top-right;    color: green
+	{ {  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f } }, // index: 2; position: bottom-right; color: blue
+	{ { -0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f } }  // index: 3; position: bottom-left;  color: magenta
 };
 
 // indices for index buffer
@@ -63,6 +64,13 @@ void Application::Run()
 {
 	while (!glfwWindowShouldClose(m_Window))
 	{
+		// calculating delta time
+		float currentFrameTime = static_cast<float>(glfwGetTime());
+		m_DeltaTime     = currentFrameTime - m_LastFrameTime;
+		m_LastFrameTime = currentFrameTime;
+
+		ProcessInput();
+
 		glfwPollEvents();
 		DrawFrame();
 	}
@@ -80,6 +88,8 @@ void Application::InitWindow()
 
 	glfwSetWindowUserPointer(m_Window, this); // glfw doesnt call the member function with the right `this`
 	glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
+
+	glfwSetCursorPosCallback(m_Window, OnMouseMove);
 }
 
 void Application::InitVulkan()
@@ -738,9 +748,9 @@ void Application::CreateGraphicsPipeline()
 	rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;                // if true, the geometry never passes through rasterizer stage
 	rasterizationStateCreateInfo.polygonMode             = VK_POLYGON_MODE_FILL;    // how fragments are generated
 	rasterizationStateCreateInfo.lineWidth               = 1.0f;                    // thickness of lines
-	rasterizationStateCreateInfo.cullMode                = VK_CULL_MODE_BACK_BIT;   // type of face culling; cull the back face
+	rasterizationStateCreateInfo.cullMode                = VK_CULL_MODE_NONE;   // type of face culling; cull the back face
 	// we specify counter clockwise because in the projection matrix we flipped the y-coord
-	rasterizationStateCreateInfo.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE; // vertex order for faces to be considered front-face
+	rasterizationStateCreateInfo.frontFace               = VK_FRONT_FACE_CLOCKWISE; // vertex order for faces to be considered front-face
 	// the depth value can be altered by adding a constant value based on fragment slope
 	rasterizationStateCreateInfo.depthBiasEnable         = VK_FALSE;
 	rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
@@ -1316,10 +1326,10 @@ void Application::UpdateUniformBuffer(uint32_t currentFrameIdx)
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	UniformBufferObject ubo{};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view  = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view  = glm::lookAt(s_CameraPos, s_CameraPos + s_CameraFront, s_CameraUp);
 	ubo.proj  = glm::perspective(glm::radians(45.0f), m_SwapchainExtent.width / (float)m_SwapchainExtent.height, 1.0f, 10.0f);
-	ubo.proj[1][1] *= -1; // glm was designed for opengl where the y-coord for clip coordinate is flipped
+	//ubo.proj[1][1] *= -1; // glm was designed for opengl where the y-coord for clip coordinate is flipped
 
 	// copy the data from ubo to the uniform buffer
 	memcpy(m_UniformBuffersMapped[currentFrameIdx], &ubo, sizeof(ubo));
@@ -1379,4 +1389,90 @@ void Application::CreateDescriptorSets()
 
 		vkUpdateDescriptorSets(m_Device, 1, &descriptorWrite, 0, nullptr);
 	}
+}
+
+
+// camera
+glm::vec3 Application::s_CameraPos   = glm::vec3(0.0f,  0.0f,  3.0f);
+glm::vec3 Application::s_CameraFront = glm::vec3(0.0f,  0.0f, -1.0f); // negative z-axis is front
+glm::vec3 Application::s_CameraUp    = glm::vec3(0.0f,  1.0f,  0.0f);
+
+float Application::s_Yaw   = -90.0f;
+float Application::s_Pitch = 0.0f;
+
+// we can set them to the middle of the screen but we move the camera on mouse button click
+float Application::s_LastX = 0.0f;
+float Application::s_LastY = 0.0f; 
+
+
+void Application::OnMouseMove(GLFWwindow* window, double xpos, double ypos)
+{
+	static bool firstMouse = true;
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) != GLFW_PRESS) // only move the camera on mouse button click
+	{
+		firstMouse = true;
+		return;
+	}
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	
+	if (firstMouse)
+	{
+		s_LastX = xpos;
+		s_LastY = ypos;
+		firstMouse = false;
+	}
+
+	const float sensitivity = 0.05f; 
+	float xOffset = (xpos - s_LastX) * sensitivity;
+	float yOffset = (ypos - s_LastY) * sensitivity;
+
+	s_LastX = xpos;
+	s_LastY = ypos;
+
+	s_Yaw += xOffset;
+	s_Pitch += yOffset;
+
+	if (s_Pitch > 89.0f)
+		s_Pitch = 89.0f;
+	if (s_Pitch < -89.0f)
+		s_Pitch = -89.0f;
+
+	glm::vec3 direction;
+	direction.x = std::cosf(glm::radians(s_Yaw)) * std::cosf(glm::radians(s_Pitch));
+	direction.y = std::sinf(glm::radians(s_Pitch));
+	direction.z = std::sinf(glm::radians(s_Yaw)) * std::cosf(glm::radians(s_Pitch));
+	s_CameraFront = glm::normalize(direction);
+}
+
+void Application::ProcessInput()
+{
+	// movement
+	const float cameraSpeed = 2.0f * m_DeltaTime;
+	if (glfwGetKey(m_Window, GLFW_KEY_W) == GLFW_PRESS) // forward
+		s_CameraPos += cameraSpeed * s_CameraFront;
+	if (glfwGetKey(m_Window, GLFW_KEY_S) == GLFW_PRESS) // backward
+		s_CameraPos -= cameraSpeed * s_CameraFront;
+	
+	if (glfwGetKey(m_Window, GLFW_KEY_A) == GLFW_PRESS) // left
+		s_CameraPos -= cameraSpeed * (glm::normalize(glm::cross(s_CameraFront, s_CameraUp)));
+	if (glfwGetKey(m_Window, GLFW_KEY_D) == GLFW_PRESS) // right 
+		s_CameraPos += cameraSpeed * (glm::normalize(glm::cross(s_CameraFront, s_CameraUp)));
+	
+	if (glfwGetKey(m_Window, GLFW_KEY_E) == GLFW_PRESS) // up
+	{
+		const glm::vec3 rightVec = glm::cross(s_CameraFront, s_CameraUp);
+		const glm::vec3 upVec    = glm::cross(rightVec, s_CameraFront);
+		s_CameraPos -= cameraSpeed * glm::normalize(upVec); // minus becuause y is flipped
+	}
+	if (glfwGetKey(m_Window, GLFW_KEY_Q) == GLFW_PRESS) // down
+	{
+		const glm::vec3 rightVec = glm::cross(s_CameraFront, s_CameraUp);
+		const glm::vec3 upVec    = glm::cross(rightVec, s_CameraFront);
+		s_CameraPos += cameraSpeed * glm::normalize(upVec);
+	}
+
+	
+	if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
+		glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }

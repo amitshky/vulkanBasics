@@ -16,11 +16,6 @@ layout (binding = 0) uniform UniformBufferObjects
 
 void main()
 {
-	// we are directly outputting clip coordinates, w component is set to 1
-
-	// gl_VertexIndex contains index of the current vertex
-	// which is usually an index to the vertex buffer,
-	// but here it indexes the hardcoded array
 	gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);
 	fragColor = inColor;
 }

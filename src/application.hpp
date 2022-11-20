@@ -178,6 +178,10 @@ private:
 	void CreateDescriptorPool();
 	void CreateDescriptorSets();
 
+	// camera
+	void ProcessInput();
+	static void OnMouseMove(GLFWwindow* window, double xpos, double ypos);
+
 private:
 	std::string m_Title;
 	int32_t m_Width;
@@ -239,4 +243,20 @@ private:
 	VkDeviceMemory m_VertexBufferMemory;
 	VkBuffer m_IndexBuffer;
 	VkDeviceMemory m_IndexBufferMemory;
+
+
+	// camera
+	static glm::vec3 s_CameraPos;
+	static glm::vec3 s_CameraFront;
+	static glm::vec3 s_CameraUp;
+	
+	static float s_Yaw;
+	static float s_Pitch;
+
+	static float s_LastX;
+	static float s_LastY;
+
+	// for delta time
+	float m_LastFrameTime = 0.0f;
+	float m_DeltaTime     = 0.0f;
 };
