@@ -13,6 +13,8 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#include "camera.h"
+
 
 // Validation layers settings
 #ifdef NDEBUG // Release mode
@@ -244,17 +246,7 @@ private:
 	VkBuffer m_IndexBuffer;
 	VkDeviceMemory m_IndexBufferMemory;
 
-
-	// camera
-	static glm::vec3 s_CameraPos;
-	static glm::vec3 s_CameraFront;
-	static glm::vec3 s_CameraUp;
-	
-	static float s_Yaw;
-	static float s_Pitch;
-
-	static float s_LastX;
-	static float s_LastY;
+	Camera m_Camera;
 
 	// for delta time
 	float m_LastFrameTime = 0.0f;

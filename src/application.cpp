@@ -49,7 +49,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 
 Application::Application(const std::string& title, int32_t width, int32_t height)
-	: m_Title(title), m_Width(width), m_Height(height)
+	: m_Title(title), m_Width(width), m_Height(height), m_Camera(width / (float)height)
 {
 	InitWindow();
 	InitVulkan();
@@ -62,6 +62,7 @@ Application::~Application()
 
 void Application::Run()
 {
+	float prevFrameRate = 0.0f;
 	while (!glfwWindowShouldClose(m_Window))
 	{
 		// calculating delta time
@@ -69,10 +70,11 @@ void Application::Run()
 		m_DeltaTime     = currentFrameTime - m_LastFrameTime;
 		m_LastFrameTime = currentFrameTime;
 
-		ProcessInput();
-
-		glfwPollEvents();
+		m_Camera.OnUpdate(m_Window, m_DeltaTime, m_SwapchainExtent.width, m_SwapchainExtent.height);
 		DrawFrame();
+
+		ProcessInput();
+		glfwPollEvents();
 	}
 
 	vkDeviceWaitIdle(m_Device);
@@ -1327,8 +1329,8 @@ void Application::UpdateUniformBuffer(uint32_t currentFrameIdx)
 
 	UniformBufferObject ubo{};
 	ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view  = glm::lookAt(s_CameraPos, s_CameraPos + s_CameraFront, s_CameraUp);
-	ubo.proj  = glm::perspective(glm::radians(45.0f), m_SwapchainExtent.width / (float)m_SwapchainExtent.height, 1.0f, 10.0f);
+	ubo.view  = m_Camera.GetViewMatrix();
+	ubo.proj  = m_Camera.GetProjectionMatrix();
 	//ubo.proj[1][1] *= -1; // glm was designed for opengl where the y-coord for clip coordinate is flipped
 
 	// copy the data from ubo to the uniform buffer
@@ -1391,88 +1393,15 @@ void Application::CreateDescriptorSets()
 	}
 }
 
-
-// camera
-glm::vec3 Application::s_CameraPos   = glm::vec3(0.0f,  0.0f,  3.0f);
-glm::vec3 Application::s_CameraFront = glm::vec3(0.0f,  0.0f, -1.0f); // negative z-axis is front
-glm::vec3 Application::s_CameraUp    = glm::vec3(0.0f,  1.0f,  0.0f);
-
-float Application::s_Yaw   = -90.0f;
-float Application::s_Pitch = 0.0f;
-
-// we can set them to the middle of the screen but we move the camera on mouse button click
-float Application::s_LastX = 0.0f;
-float Application::s_LastY = 0.0f; 
-
-
 void Application::OnMouseMove(GLFWwindow* window, double xpos, double ypos)
 {
-	static bool firstMouse = true;
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) != GLFW_PRESS) // only move the camera on mouse button click
-	{
-		firstMouse = true;
-		return;
-	}
-
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	
-	if (firstMouse)
-	{
-		s_LastX = xpos;
-		s_LastY = ypos;
-		firstMouse = false;
-	}
-
-	const float sensitivity = 0.05f; 
-	float xOffset = (xpos - s_LastX) * sensitivity;
-	float yOffset = (ypos - s_LastY) * sensitivity;
-
-	s_LastX = xpos;
-	s_LastY = ypos;
-
-	s_Yaw += xOffset;
-	s_Pitch += yOffset;
-
-	if (s_Pitch > 89.0f)
-		s_Pitch = 89.0f;
-	if (s_Pitch < -89.0f)
-		s_Pitch = -89.0f;
-
-	glm::vec3 direction;
-	direction.x = std::cosf(glm::radians(s_Yaw)) * std::cosf(glm::radians(s_Pitch));
-	direction.y = std::sinf(glm::radians(s_Pitch));
-	direction.z = std::sinf(glm::radians(s_Yaw)) * std::cosf(glm::radians(s_Pitch));
-	s_CameraFront = glm::normalize(direction);
+	auto app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+	app->m_Camera.OnMouseMove(window, xpos, ypos);
 }
 
 void Application::ProcessInput()
 {
-	// movement
-	const float cameraSpeed = 2.0f * m_DeltaTime;
-	if (glfwGetKey(m_Window, GLFW_KEY_W) == GLFW_PRESS) // forward
-		s_CameraPos += cameraSpeed * s_CameraFront;
-	if (glfwGetKey(m_Window, GLFW_KEY_S) == GLFW_PRESS) // backward
-		s_CameraPos -= cameraSpeed * s_CameraFront;
-	
-	if (glfwGetKey(m_Window, GLFW_KEY_A) == GLFW_PRESS) // left
-		s_CameraPos -= cameraSpeed * (glm::normalize(glm::cross(s_CameraFront, s_CameraUp)));
-	if (glfwGetKey(m_Window, GLFW_KEY_D) == GLFW_PRESS) // right 
-		s_CameraPos += cameraSpeed * (glm::normalize(glm::cross(s_CameraFront, s_CameraUp)));
-	
-	if (glfwGetKey(m_Window, GLFW_KEY_E) == GLFW_PRESS) // up
-	{
-		const glm::vec3 rightVec = glm::cross(s_CameraFront, s_CameraUp);
-		const glm::vec3 upVec    = glm::cross(rightVec, s_CameraFront);
-		s_CameraPos -= cameraSpeed * glm::normalize(upVec); // minus becuause y is flipped
-	}
-	if (glfwGetKey(m_Window, GLFW_KEY_Q) == GLFW_PRESS) // down
-	{
-		const glm::vec3 rightVec = glm::cross(s_CameraFront, s_CameraUp);
-		const glm::vec3 upVec    = glm::cross(rightVec, s_CameraFront);
-		s_CameraPos += cameraSpeed * glm::normalize(upVec);
-	}
-
-	
-	if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
-		glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	// close window
+	if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(m_Window, true);
 }
