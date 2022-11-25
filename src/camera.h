@@ -17,10 +17,13 @@ public:
 	inline glm::mat4 GetViewMatrix()       const { return m_ViewMatrix; }
 	inline glm::mat4 GetProjectionMatrix() const { return m_ProjectionMatrix; }
 
+	void Orbit(GLFWwindow* window, double xpos, double ypos);
+
 private:
 	glm::vec3 m_CameraPos;
 	glm::vec3 m_CameraFront;
 	glm::vec3 m_CameraUp;
+	glm::vec3 m_Target;
 
 	float m_Yaw;
 	float m_Pitch;

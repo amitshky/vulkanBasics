@@ -70,6 +70,8 @@ void Application::Run()
 		m_DeltaTime     = currentFrameTime - m_LastFrameTime;
 		m_LastFrameTime = currentFrameTime;
 
+		//printf("\r%8.2f fps", 1 / m_DeltaTime);
+
 		m_Camera.OnUpdate(m_Window, m_DeltaTime, m_SwapchainExtent.width, m_SwapchainExtent.height);
 		DrawFrame();
 

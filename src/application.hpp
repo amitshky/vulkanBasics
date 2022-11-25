@@ -180,7 +180,6 @@ private:
 	void CreateDescriptorPool();
 	void CreateDescriptorSets();
 
-	// camera
 	void ProcessInput();
 	static void OnMouseMove(GLFWwindow* window, double xpos, double ypos);
 
