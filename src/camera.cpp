@@ -52,10 +52,6 @@ void Camera::OnUpdate(GLFWwindow* window, float deltaTime, uint32_t width, uint3
 		const glm::vec3 upVec    = glm::cross(rightVec, m_CameraFront);
 		m_CameraPos += cameraSpeed * glm::normalize(upVec);
 	}
-	
-	// unhide cursor when camera stops moving
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
 void Camera::OnMouseMove(GLFWwindow* window, double xpos, double ypos)
@@ -66,8 +62,6 @@ void Camera::OnMouseMove(GLFWwindow* window, double xpos, double ypos)
 		firstMouse = true;
 		return;
 	}
-
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hide cursor when moving camera
 	
 	if (firstMouse)
 	{

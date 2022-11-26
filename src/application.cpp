@@ -1406,4 +1406,12 @@ void Application::ProcessInput()
 	// close window
 	if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(m_Window, true);
+
+	// mouse button 1 to move camera
+	// hide cursor when moving camera
+	if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+		glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	// unhide cursor when camera stops moving
+	else if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
+		glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
