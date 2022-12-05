@@ -1152,13 +1152,13 @@ void Application::FramebufferResizeCallback(GLFWwindow* window, int width, int h
 
 void Application::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
-	VkBufferCreateInfo vertexBufferCreateInfo{};
-	vertexBufferCreateInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	vertexBufferCreateInfo.size        = size;
-	vertexBufferCreateInfo.usage       = usage;
-	vertexBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // buffers can be owned by a specific queue family or be shared between multiple at the same time
+	VkBufferCreateInfo bufferCreateInfo{};
+	bufferCreateInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferCreateInfo.size        = size;
+	bufferCreateInfo.usage       = usage;
+	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // buffers can be owned by a specific queue family or be shared between multiple at the same time
 
-	if (vkCreateBuffer(m_Device, &vertexBufferCreateInfo, nullptr, &buffer) != VK_SUCCESS)
+	if (vkCreateBuffer(m_Device, &bufferCreateInfo, nullptr, &buffer) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create vertex buffer!");
 
 	// assign memory to the buffer
