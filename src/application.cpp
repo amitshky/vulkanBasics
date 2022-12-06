@@ -1375,6 +1375,7 @@ void Application::CreateDescriptorSets()
 	// configure descriptors in the descriptor sets
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
+		// to configure descriptors that refer to buffers, `VkDescriptorBufferInfo`
 		VkDescriptorBufferInfo descriptorBufferInfo{};
 		descriptorBufferInfo.buffer = m_UniformBuffers[i];
 		descriptorBufferInfo.offset = 0;
@@ -1391,6 +1392,7 @@ void Application::CreateDescriptorSets()
 		descriptorWrite.descriptorCount = 1; // number of elements you want to update
 		descriptorWrite.pBufferInfo     = &descriptorBufferInfo;
 
+		// updates the configurations of the descriptor sets
 		vkUpdateDescriptorSets(m_Device, 1, &descriptorWrite, 0, nullptr);
 	}
 }

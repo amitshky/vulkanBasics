@@ -254,7 +254,7 @@
 
 ## Uniform buffers
 * we can use vertex buffers for example, to store MVP matrices, but we would have to update the vertex buffers whenever the transformations change
-* so we use *resource descriptors*, they are a way for the shaders to freely access resources like buffers and images
+* so we use *resource descriptors*, they are a way for the shaders to freely access resources like buffers and images and *descriptor sets* specify the actual buffers and images that will be bound to the descriptors.
 * steps:
 	* specify a descriptor layout during pipeline creation
 	* allocate a descriptor set from a descriptor pool
