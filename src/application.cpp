@@ -985,8 +985,6 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	// bind the vertex buffer
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
-
 	VkBuffer vertexBuffers[] = { m_VertexBuffer };
 	VkDeviceSize offsets[]   = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
