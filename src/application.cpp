@@ -13,14 +13,16 @@
 
 // vertex data
 std::vector<Vertex> vertices{
-	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } }, // index: 0; position: top-left;     color: red
-	{ {  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } }, // index: 1; position: top-right;    color: green
-	{ {  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f } }, // index: 2; position: bottom-right; color: blue
-	{ { -0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f } }  // index: 3; position: bottom-left;  color: magenta
+	{ {  0.0000f, -0.5f }, { 1.0f, 0.0f, 0.0f } }, // 0
+	{ {  0.2885f,  0.0f }, { 0.5f, 0.5f, 0.0f } }, // 1
+	{ {  0.5770f,  0.5f }, { 0.0f, 1.0f, 0.0f } }, // 2
+	{ {  0.0000f,  0.5f }, { 0.0f, 0.5f, 0.5f } }, // 3
+	{ { -0.5770f,  0.5f }, { 0.0f, 0.0f, 1.0f } }, // 4
+	{ { -0.2885f,  0.0f }, { 0.5f, 0.0f, 0.5f } }  // 5
 };
 
 // indices for index buffer
-std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
+std::vector<uint16_t> indices = { 0, 1, 5, 1, 2, 3, 5, 3, 4 };
 
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, 
@@ -146,6 +148,7 @@ void Application::Cleanup()
 	// cleanup index buffer
 	vkDestroyBuffer(m_Device, m_IndexBuffer, nullptr);
 	vkFreeMemory(m_Device, m_IndexBufferMemory, nullptr);
+
 	// cleanup vertex buffer
 	vkDestroyBuffer(m_Device, m_VertexBuffer, nullptr);
 	vkFreeMemory(m_Device, m_VertexBufferMemory, nullptr);
@@ -993,7 +996,10 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	// descriptor sets are not unique to graphics or compute pipeline so we need to specify it
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[m_CurrentFrameIdx], 0, nullptr);
 
-	// the draw command changes if index buffers are used
+	// the draw command if we don't use an index buffer
+	//vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+
+	// the draw command if we use index buffers
 	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 	// end render pass

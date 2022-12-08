@@ -14,8 +14,8 @@ Camera::Camera(float aspectRatio)
 	  m_Yaw{-90.0f}, m_Pitch{0.0f}, 
 	  m_LastX{0.0f}, m_LastY{0.0f},
 	  m_FOVy{glm::radians(45.0f)},
-	  m_ZNear{1.0f},
-	  m_ZFar{10.0f},
+	  m_ZNear{0.2f},
+	  m_ZFar{30.0f},
 	  m_ViewMatrix{},
 	  m_ProjectionMatrix{}
 {
