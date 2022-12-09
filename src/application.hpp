@@ -172,7 +172,7 @@ private:
 	void CreateVertexBuffer();
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-	void CreateIndexBuffer();
+	//void CreateIndexBuffer();
 
 	void CreateDescriptorSetLayout();
 	void CreateUniformBuffers();
@@ -182,6 +182,8 @@ private:
 
 	void ProcessInput();
 	static void OnMouseMove(GLFWwindow* window, double xpos, double ypos);
+
+	void GenerateSierpinskiVertices(int depth, const glm::vec2& a, const glm::vec2& b, const glm::vec2& c, const glm::vec3& color, std::vector<Vertex>& vertices);
 
 private:
 	std::string m_Title;

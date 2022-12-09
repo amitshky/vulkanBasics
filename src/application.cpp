@@ -12,17 +12,10 @@
 
 
 // vertex data
-std::vector<Vertex> vertices{
-	{ {  0.0000f, -0.5f }, { 1.0f, 0.0f, 0.0f } }, // 0
-	{ {  0.2885f,  0.0f }, { 0.5f, 0.5f, 0.0f } }, // 1
-	{ {  0.5770f,  0.5f }, { 0.0f, 1.0f, 0.0f } }, // 2
-	{ {  0.0000f,  0.5f }, { 0.0f, 0.5f, 0.5f } }, // 3
-	{ { -0.5770f,  0.5f }, { 0.0f, 0.0f, 1.0f } }, // 4
-	{ { -0.2885f,  0.0f }, { 0.5f, 0.0f, 0.5f } }  // 5
-};
+std::vector<Vertex> vertices{};
 
 // indices for index buffer
-std::vector<uint16_t> indices = { 0, 1, 5, 1, 2, 3, 5, 3, 4 };
+//std::vector<uint16_t> indices = { 0, 1, 5, 1, 2, 3, 5, 3, 4 };
 
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, 
@@ -53,6 +46,9 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 Application::Application(const std::string& title, int32_t width, int32_t height)
 	: m_Title(title), m_Width(width), m_Height(height), m_Camera(width / (float)height)
 {
+	glm::vec3 color = { 120.0f / 255.0f, 187.0f / 255.0f, 123.0f / 255.0f };
+	GenerateSierpinskiVertices(6, glm::vec2(0.0f, -0.5f), glm::vec2(0.577f, 0.5f), glm::vec2(-0.577, 0.5f), color, vertices);
+
 	InitWindow();
 	InitVulkan();
 }
@@ -113,7 +109,7 @@ void Application::InitVulkan()
 	CreateFramebuffers();
 	CreateCommandPool();
 	CreateVertexBuffer();
-	CreateIndexBuffer();
+	//CreateIndexBuffer();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
@@ -146,8 +142,8 @@ void Application::Cleanup()
 	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 
 	// cleanup index buffer
-	vkDestroyBuffer(m_Device, m_IndexBuffer, nullptr);
-	vkFreeMemory(m_Device, m_IndexBufferMemory, nullptr);
+	//vkDestroyBuffer(m_Device, m_IndexBuffer, nullptr);
+	//vkFreeMemory(m_Device, m_IndexBufferMemory, nullptr);
 
 	// cleanup vertex buffer
 	vkDestroyBuffer(m_Device, m_VertexBuffer, nullptr);
@@ -991,16 +987,16 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	VkBuffer vertexBuffers[] = { m_VertexBuffer };
 	VkDeviceSize offsets[]   = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+	//vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
 	// descriptor sets are not unique to graphics or compute pipeline so we need to specify it
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[m_CurrentFrameIdx], 0, nullptr);
 
 	// the draw command if we don't use an index buffer
-	//vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+	vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
 	// the draw command if we use index buffers
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	//vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 	// end render pass
 	vkCmdEndRenderPass(commandBuffer);
@@ -1267,29 +1263,29 @@ void Application::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
 	vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &cmdBuff);
 }
 
-void Application::CreateIndexBuffer()
-{
-	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+//void Application::CreateIndexBuffer()
+//{
+//	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-	CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // source memory during transfer
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory); // staging buffer (in the CPU); temporary buffer
+//	VkBuffer stagingBuffer;
+//	VkDeviceMemory stagingBufferMemory;
+//	CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // source memory during transfer
+//		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory); // staging buffer (in the CPU); temporary buffer
 
-	// copy the vertex data to the buffer
-	void* data;
-	vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data); // mapping the buffer memory into CPU accessible memory
-	memcpy(data, indices.data(), (size_t)bufferSize);
-	vkUnmapMemory(m_Device, stagingBufferMemory);
+//	// copy the vertex data to the buffer
+//	void* data;
+//	vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data); // mapping the buffer memory into CPU accessible memory
+//	memcpy(data, indices.data(), (size_t)bufferSize);
+//	vkUnmapMemory(m_Device, stagingBufferMemory);
 
-	CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, // destination memory during transfer
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory); // the actual buffer (located in the device memory)
+//	CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, // destination memory during transfer
+//		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory); // the actual buffer (located in the device memory)
 
-	CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
+//	CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
 
-	vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
-	vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
-}
+//	vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
+//	vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+//}
 
 void Application::CreateDescriptorSetLayout()
 {
@@ -1420,4 +1416,23 @@ void Application::ProcessInput()
 	// unhide cursor when camera stops moving
 	else if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
 		glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+void Application::GenerateSierpinskiVertices(int depth, const glm::vec2& a, const glm::vec2& b, const glm::vec2& c, const glm::vec3& color, std::vector<Vertex>& vertices)
+{
+	if (depth == 0)
+	{
+		vertices.push_back({ a, color });
+		vertices.push_back({ b, color });
+		vertices.push_back({ c, color });
+		return;
+	}
+
+	glm::vec2 midAB{ (a.x + b.x) / 2.0f, (a.y + b.y) / 2.0f };
+	glm::vec2 midBC{ (b.x + c.x) / 2.0f, (b.y + c.y) / 2.0f };
+	glm::vec2 midCA{ (c.x + a.x) / 2.0f, (c.y + a.y) / 2.0f };
+
+	GenerateSierpinskiVertices(depth - 1, a, midAB, midCA, color, vertices);
+	GenerateSierpinskiVertices(depth - 1, b, midBC, midAB, color, vertices);
+	GenerateSierpinskiVertices(depth - 1, c, midCA, midBC, color, vertices);
 }
