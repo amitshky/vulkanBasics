@@ -46,8 +46,10 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 Application::Application(const std::string& title, int32_t width, int32_t height)
 	: m_Title(title), m_Width(width), m_Height(height), m_Camera(width / (float)height)
 {
-	glm::vec3 color = { 120.0f / 255.0f, 187.0f / 255.0f, 123.0f / 255.0f };
-	GenerateSierpinskiVertices(6, glm::vec2(0.0f, -0.5f), glm::vec2(0.577f, 0.5f), glm::vec2(-0.577, 0.5f), color, vertices);
+	constexpr glm::vec3 color = { 120.0f / 255.0f, 187.0f / 255.0f, 123.0f / 255.0f };
+	constexpr int depth = 6;
+	vertices.resize(std::pow(3, depth + 1));
+	GenerateSierpinskiVertices(depth, glm::vec2(0.0f, -0.5f), glm::vec2(0.577f, 0.5f), glm::vec2(-0.577, 0.5f), color, vertices);
 
 	InitWindow();
 	InitVulkan();
@@ -1432,7 +1434,7 @@ void Application::GenerateSierpinskiVertices(int depth, const glm::vec2& a, cons
 	glm::vec2 midBC{ (b.x + c.x) / 2.0f, (b.y + c.y) / 2.0f };
 	glm::vec2 midCA{ (c.x + a.x) / 2.0f, (c.y + a.y) / 2.0f };
 
-	GenerateSierpinskiVertices(depth - 1, a, midAB, midCA, color, vertices);
-	GenerateSierpinskiVertices(depth - 1, b, midBC, midAB, color, vertices);
-	GenerateSierpinskiVertices(depth - 1, c, midCA, midBC, color, vertices);
+	GenerateSierpinskiVertices(depth - 1, a,     midAB, midCA, color, vertices);
+	GenerateSierpinskiVertices(depth - 1, midAB, b,     midBC, color, vertices);
+	GenerateSierpinskiVertices(depth - 1, midCA, midBC, c,     color, vertices);
 }
