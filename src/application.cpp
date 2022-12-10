@@ -1292,7 +1292,7 @@ void Application::CreateDescriptorSetLayout()
 	uboLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	uboLayoutBinding.descriptorCount    = 1;
 	uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT; // shader stage that the descriptor will be referencing
-	uboLayoutBinding.pImmutableSamplers =  nullptr;
+	uboLayoutBinding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutCreateInfo descriptorLayoutCreateInfo{};
 	descriptorLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -1316,6 +1316,7 @@ void Application::CreateUniformBuffers()
 		CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffers[i], m_UniformBuffersMemory[i]);
 
+		//                    // actual buffer in GPU                      // buffer mapped to the CPU
 		vkMapMemory(m_Device, m_UniformBuffersMemory[i], 0, bufferSize, 0, &m_UniformBuffersMapped[i]); // persistent mapping; pointer for application's lifetime
 	}
 }
@@ -1333,7 +1334,7 @@ void Application::UpdateUniformBuffer(uint32_t currentFrameIdx)
 	ubo.proj  = m_Camera.GetProjectionMatrix();
 	//ubo.proj[1][1] *= -1; // glm was designed for opengl where the y-coord for clip coordinate is flipped
 
-	// copy the data from ubo to the uniform buffer
+	// copy the data from ubo to the uniform buffer (in GPU)
 	memcpy(m_UniformBuffersMapped[currentFrameIdx], &ubo, sizeof(ubo));
 }
 
