@@ -28,6 +28,13 @@ OR (using bat scripts from `scripts` folder)
 ```
 
 
+## Usage
+* WASD to move the camera forward, left, back, and right respectively.
+* E and Q to move the camera up and down.
+* Esc to close the window
+* Left click and drag the mouse to move the view of the camera (in first person)
+
+
 ## Notes
 (see [notes.md](./notes.md))
 
@@ -45,3 +52,11 @@ OR (using bat scripts from `scripts` folder)
 * Hello Triangle
 
 	<img src="img/hellotriangle.png" width=450>
+
+* Rectangle
+
+	<img src="img/rectangle.png" width=450>
+
+* Sierpinski's triangle (checkout `sierpinski` branch)
+
+	<img src="img/sierpinski.png" width=450>
