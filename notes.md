@@ -260,3 +260,26 @@
 	* allocate a descriptor set from a descriptor pool
 	* blind the descriptor set during rendering
 * descriptor sets need to be allocated from a pool like command buffers (descriptor pool)
+
+
+## Texture mapping
+### Image
+* Steps
+	* create an image object backed by device memory
+	* fill it with pixels from an image file
+	* create an image sampler
+	* add a combined image sampler descriptor to sample colors from the texture
+* swap chain also uses image objects but those were automatically created by it
+* creating an image and filling it up with data is similar to vertex buffers
+	* but images can have different layouts that affect how the pixels are organized in the memory
+* we create a staging resource and fill it up with data, then copy it to the image object
+	* we can create staging images but use `VkBuffer`
+		* which is typically faster for some hardware
+* pipeline barriers are used to synchronizing access to resources
+	* to make sure the image has been written to before it is read
+* Image objects use 2D coordinates to retrieve colors
+* **Layout Transitions:**
+	* to copy the buffer into the image, we need the image to be in the right layout first
+	* one way to perform layout transitions is to use image memory barrier
+		* they are used to synchronize access to resources (assures write to buffers completes before read)
+		* also used to transition image layouts and transfer queue family ownership when `VK_SHARING_MODE_EXCLUSIVE` is used

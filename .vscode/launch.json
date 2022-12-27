@@ -3,7 +3,7 @@
 	"configurations": [
 		// Clang
 		{
-			"name": "(Clang) Debug",
+			"name": "(Clang) Debug (cppvsdbg)",
 			"type": "cppvsdbg",
 			"request": "launch",
 			"preLaunchTask": "Build-Clang-Debug",

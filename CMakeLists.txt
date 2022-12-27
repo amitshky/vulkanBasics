@@ -33,6 +33,7 @@ target_include_directories(
 	${PROJECT_NAME} 
 	PUBLIC
 	"src/"
+	"lib/"
 	"lib/glm/"
 	"lib/glfw/include/"
 	${Vulkan_INCLUDE_DIR} 
