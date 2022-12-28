@@ -115,6 +115,8 @@ void Application::InitVulkan()
 	CreateFramebuffers();
 	CreateCommandPool();
 	CreateTextureImage();
+	CreateTextureImageView();
+	CreateTextureSampler();
 	CreateVertexBuffer();
 	CreateIndexBuffer();
 	CreateUniformBuffers();
@@ -127,6 +129,9 @@ void Application::InitVulkan()
 void Application::Cleanup()
 {
 	CleanupSwapchain();
+	
+	vkDestroySampler(m_Device, m_TextureSampler, nullptr);
+	vkDestroyImageView(m_Device, m_TextureImageView, nullptr);
 
 	vkDestroyImage(m_Device, m_TextureImage, nullptr);
 	vkFreeMemory(m_Device, m_TextureImageMemory, nullptr);
@@ -361,7 +366,10 @@ bool Application::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
 		swapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
 	}
 
-	return indicies.IsComplete() && extensionsSupported && swapchainAdequate;
+	VkPhysicalDeviceFeatures supportedFeatures;
+	vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
+
+	return indicies.IsComplete() && extensionsSupported && swapchainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
 QueueFamilyIndices Application::FindQueueFamilies(VkPhysicalDevice physicalDevice)
@@ -421,8 +429,8 @@ void Application::CreateLogicalDevice()
 	}
 
 	// specify used device features
-	// currently we don't need anything special
 	VkPhysicalDeviceFeatures deviceFeatures{};
+	deviceFeatures.samplerAnisotropy = VK_TRUE;
 	
 	// create logical device
 	VkDeviceCreateInfo deviceCreateInfo{};
@@ -620,31 +628,7 @@ void Application::CreateImageViews()
 	m_SwapchainImageviews.resize(m_SwapchainImages.size());
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
-	{
-		VkImageViewCreateInfo imageViewCreateInfo{};
-		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.image = m_SwapchainImages[i];
-		// specify how image data should be interpreted
-		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // treat images as 2D textures
-		imageViewCreateInfo.format   = m_SwapchainImageFormat;
-
-		// here you can map the channels as you wish; for example map all the channels to red for a monochrome texture
-		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-		// describe the image's purpose and which part of the image to access
-		// our image will be used as color targets without any mipmapping levels or multiple layers
-		imageViewCreateInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCreateInfo.subresourceRange.baseMipLevel   = 0;
-		imageViewCreateInfo.subresourceRange.levelCount     = 1;
-		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		imageViewCreateInfo.subresourceRange.layerCount     = 1;
-
-		if (vkCreateImageView(m_Device, &imageViewCreateInfo, nullptr, &m_SwapchainImageviews[i]) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create Image views!");
-	}
+		m_SwapchainImageviews[i] = CreateImageView(m_SwapchainImages[i], m_SwapchainImageFormat);
 }
 
 void Application::CreateRenderPass()
@@ -1539,13 +1523,8 @@ void Application::TransitionImageLayout(VkImage image, VkFormat format, VkImageL
 	imgMemBarrier.subresourceRange.levelCount     = 1;
 	imgMemBarrier.subresourceRange.baseArrayLayer = 0;
 	imgMemBarrier.subresourceRange.layerCount     = 1;
-	// TODO:update this
-	imgMemBarrier.srcAccessMask = 0;
-	imgMemBarrier.dstAccessMask = 0;
 
 	// specify operations that the resource has to wait for
-	vkCmdPipelineBarrier(cmdBuff, 0, 0, 0, 0, nullptr, 0, nullptr, 1, &imgMemBarrier);
-
 	// handle access masks and pipeline stages
 	// to handle transfer writes that don't wait on anything
 	// and shader reads, which should wait on transfer writes
@@ -1602,3 +1581,52 @@ void Application::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t wid
 	EndSingleTimeCommands(cmdBuff);
 }
 
+VkImageView Application::CreateImageView(VkImage image, VkFormat format)
+{
+	VkImageViewCreateInfo imgViewCreateInfo{};
+	imgViewCreateInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	imgViewCreateInfo.image    = image;
+	imgViewCreateInfo.format   = format;
+	imgViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	imgViewCreateInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	imgViewCreateInfo.subresourceRange.baseMipLevel   = 0;
+	imgViewCreateInfo.subresourceRange.levelCount     = 1;
+	imgViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+	imgViewCreateInfo.subresourceRange.layerCount     = 1;
+
+	VkImageView imageView;
+	if (vkCreateImageView(m_Device, &imgViewCreateInfo, nullptr, &imageView) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create image view!");
+
+	return imageView;
+}
+
+void Application::CreateTextureImageView()
+{
+	m_TextureImageView = CreateImageView(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB);
+}
+
+void Application::CreateTextureSampler()
+{
+	VkPhysicalDeviceProperties phyDevProperties{};
+	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &phyDevProperties);
+
+	VkSamplerCreateInfo samplerCreateInfo{};
+	samplerCreateInfo.sType     = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.anisotropyEnable = VK_TRUE;
+	samplerCreateInfo.maxAnisotropy           = phyDevProperties.limits.maxSamplerAnisotropy;
+	samplerCreateInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // specifies which color is returned when sampling beyond the image with clamp to border addressing mode
+	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE; // specifies which coordinate system you want to use to address texels in an image. 
+		// If this field is VK_TRUE, then you can simply use coordinates within the [0, texWidth) and [0, texHeight) range
+	samplerCreateInfo.compareEnable = VK_FALSE;
+	samplerCreateInfo.compareOp     = VK_COMPARE_OP_ALWAYS;
+	samplerCreateInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+	if (vkCreateSampler(m_Device, &samplerCreateInfo, nullptr, &m_TextureSampler) != VK_SUCCESS)
+		throw std::runtime_error("Failed to create Texture sampler!");
+}

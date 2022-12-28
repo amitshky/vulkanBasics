@@ -283,3 +283,10 @@
 	* one way to perform layout transitions is to use image memory barrier
 		* they are used to synchronize access to resources (assures write to buffers completes before read)
 		* also used to transition image layouts and transfer queue family ownership when `VK_SHARING_MODE_EXCLUSIVE` is used
+
+### Image view and sampler
+* **Texture Image view:**
+	* Similar to swapchain, images are accessed through image views
+* **Sampler:**
+	* Shaders read texels from samplers.
+	* they can apply filters and transformations.

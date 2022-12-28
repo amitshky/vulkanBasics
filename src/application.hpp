@@ -192,6 +192,9 @@ private:
 	void CreateTextureImage();
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+	VkImageView CreateImageView(VkImage image, VkFormat format);
+	void CreateTextureImageView();
+	void CreateTextureSampler();
 
 private:
 	std::string m_Title;
@@ -264,4 +267,6 @@ private:
 	// textures
 	VkImage m_TextureImage;
 	VkDeviceMemory m_TextureImageMemory;
+	VkImageView m_TextureImageView;
+	VkSampler m_TextureSampler;
 };
