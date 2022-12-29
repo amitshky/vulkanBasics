@@ -290,3 +290,7 @@
 * **Sampler:**
 	* Shaders read texels from samplers.
 	* they can apply filters and transformations.
+
+### Combined Image Sampler
+* Combined image sampler is a new type of descriptor.
+* It makes it possible for the shaders to image resources through a sampler.

@@ -67,6 +67,7 @@ struct Vertex
 {
 	glm::vec2 pos;
 	glm::vec3 color;
+	glm::vec2 texCoord;
 
 	static VkVertexInputBindingDescription GetBindingDescription()
 	{
@@ -78,10 +79,10 @@ struct Vertex
 		return bindingDescription;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions()
+	static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions()
 	{
 		// for position
-		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 		attributeDescriptions[0].binding  = 0; // index of the per-vertex data
 		attributeDescriptions[0].location = 0; // references the location directive of the input in the vertex shader.
 		attributeDescriptions[0].format   = VK_FORMAT_R32G32_SFLOAT; // type of data; position has 2 floats
@@ -91,7 +92,11 @@ struct Vertex
 		attributeDescriptions[1].location = 1; // references the location directive of the input in the vertex shader.
 		attributeDescriptions[1].format   = VK_FORMAT_R32G32B32_SFLOAT; // type of data; color has 3 floats
 		attributeDescriptions[1].offset   = offsetof(Vertex, color); // number of bytes from the begining of the per-vertex data
-
+		// for texture coordinates
+		attributeDescriptions[2].binding  = 0; // index of the per-vertex data
+		attributeDescriptions[2].location = 2; // references the location directive of the input in the vertex shader.
+		attributeDescriptions[2].format   = VK_FORMAT_R32G32B32_SFLOAT; // type of data; color has 3 floats
+		attributeDescriptions[2].offset   = offsetof(Vertex, texCoord); // number of bytes from the begining of the per-vertex data
 		return attributeDescriptions;
 	}
 };

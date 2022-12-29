@@ -1,6 +1,6 @@
 #include "application.hpp"
-#include "vulkan/vulkan_core.h"
 
+#include <array>
 #include <stdexcept>
 #include <cstdint>
 #include <vector>
@@ -17,10 +17,10 @@
 
 // vertex data
 std::vector<Vertex> vertices{
-	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } }, // index: 0; position: top-left;     color: red
-	{ {  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } }, // index: 1; position: top-right;    color: green
-	{ {  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f } }, // index: 2; position: bottom-right; color: blue
-	{ { -0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f } }  // index: 3; position: bottom-left;  color: magenta
+	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 0; position: top-left;     color: red
+	{ {  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 1; position: top-right;    color: green
+	{ {  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 2; position: bottom-right; color: blue
+	{ { -0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }  // index: 3; position: bottom-left;  color: magenta
 };
 
 // indices for index buffer
@@ -1300,10 +1300,19 @@ void Application::CreateDescriptorSetLayout()
 	uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT; // shader stage that the descriptor will be referencing
 	uboLayoutBinding.pImmutableSamplers = nullptr;
 
+	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+	samplerLayoutBinding.binding = 1;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutBinding.pImmutableSamplers = nullptr;
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+	
 	VkDescriptorSetLayoutCreateInfo descriptorLayoutCreateInfo{};
 	descriptorLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descriptorLayoutCreateInfo.bindingCount = 1;
-	descriptorLayoutCreateInfo.pBindings    = &uboLayoutBinding;
+	descriptorLayoutCreateInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	descriptorLayoutCreateInfo.pBindings    = bindings.data();
 
 	if (vkCreateDescriptorSetLayout(m_Device, &descriptorLayoutCreateInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create descriptor set layout!");
@@ -1347,15 +1356,17 @@ void Application::UpdateUniformBuffer(uint32_t currentFrameIdx)
 void Application::CreateDescriptorPool()
 {
 	// describe descriptor sets
-	VkDescriptorPoolSize descriptorPoolSize{};
-	descriptorPoolSize.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorPoolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	std::array<VkDescriptorPoolSize, 2> descriptorPoolSizes{};
+	descriptorPoolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	descriptorPoolSizes[1].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
 	// allocate one for every frame
 	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
 	descriptorPoolCreateInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	descriptorPoolCreateInfo.poolSizeCount = 1;
-	descriptorPoolCreateInfo.pPoolSizes    = &descriptorPoolSize;
+	descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
+	descriptorPoolCreateInfo.pPoolSizes    = descriptorPoolSizes.data();
 	descriptorPoolCreateInfo.maxSets       = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT); // max descriptor sets that can be allocated
 
 	if (vkCreateDescriptorPool(m_Device, &descriptorPoolCreateInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
@@ -1386,19 +1397,32 @@ void Application::CreateDescriptorSets()
 		descriptorBufferInfo.offset = 0;
 		descriptorBufferInfo.range  = sizeof(UniformBufferObject);
 
+		VkDescriptorImageInfo descriptorImageInfo{};
+		descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		descriptorImageInfo.imageView   = m_TextureImageView;
+		descriptorImageInfo.sampler     = m_TextureSampler;
+
 		// to update the descriptor sets
 		// we can update multiple descriptors at once in an array starting at index dstArrayElement
-		VkWriteDescriptorSet descriptorWrite{};
-		descriptorWrite.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet          = m_DescriptorSets[i];
-		descriptorWrite.dstBinding      = 0;
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrite.descriptorCount = 1; // number of elements you want to update
-		descriptorWrite.pBufferInfo     = &descriptorBufferInfo;
+		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+		descriptorWrites[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet          = m_DescriptorSets[i];
+		descriptorWrites[0].dstBinding      = 0;
+		descriptorWrites[0].dstArrayElement = 0;
+		descriptorWrites[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[0].descriptorCount = 1; // number of elements you want to update
+		descriptorWrites[0].pBufferInfo     = &descriptorBufferInfo;
 
+		descriptorWrites[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[1].dstSet          = m_DescriptorSets[i];
+		descriptorWrites[1].dstBinding      = 1;
+		descriptorWrites[1].dstArrayElement = 0;
+		descriptorWrites[1].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[1].descriptorCount = 1; // number of elements you want to update
+		descriptorWrites[1].pImageInfo     = &descriptorImageInfo;
+		
 		// updates the configurations of the descriptor sets
-		vkUpdateDescriptorSets(m_Device, 1, &descriptorWrite, 0, nullptr);
+		vkUpdateDescriptorSets(m_Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }
 
@@ -1619,10 +1643,10 @@ void Application::CreateTextureSampler()
 	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerCreateInfo.anisotropyEnable = VK_TRUE;
-	samplerCreateInfo.maxAnisotropy           = phyDevProperties.limits.maxSamplerAnisotropy;
-	samplerCreateInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // specifies which color is returned when sampling beyond the image with clamp to border addressing mode
+	samplerCreateInfo.maxAnisotropy    = phyDevProperties.limits.maxSamplerAnisotropy;
+	samplerCreateInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // specifies which color is returned when sampling beyond the image with clamp to border addressing mode
 	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE; // specifies which coordinate system you want to use to address texels in an image. 
-		// If this field is VK_TRUE, then you can simply use coordinates within the [0, texWidth) and [0, texHeight) range
+														  // If this field is VK_TRUE, then you can simply use coordinates within the [0, texWidth) and [0, texHeight) range
 	samplerCreateInfo.compareEnable = VK_FALSE;
 	samplerCreateInfo.compareOp     = VK_COMPARE_OP_ALWAYS;
 	samplerCreateInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
