@@ -51,7 +51,7 @@ struct QueueFamilyIndices
 	std::optional<uint32_t> presentFamily;
 
 	inline bool IsComplete() 
-	{ 
+	{
 		return graphicsFamily.has_value() && presentFamily.has_value(); 
 	}
 };
@@ -65,7 +65,7 @@ struct SwapchainSupportDetails
 
 struct Vertex
 {
-	glm::vec2 pos;
+	glm::vec3 pos;
 	glm::vec3 color;
 	glm::vec2 texCoord;
 
@@ -85,7 +85,7 @@ struct Vertex
 		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 		attributeDescriptions[0].binding  = 0; // index of the per-vertex data
 		attributeDescriptions[0].location = 0; // references the location directive of the input in the vertex shader.
-		attributeDescriptions[0].format   = VK_FORMAT_R32G32_SFLOAT; // type of data; position has 2 floats
+		attributeDescriptions[0].format   = VK_FORMAT_R32G32B32_SFLOAT; // type of data; position has 2 floats
 		attributeDescriptions[0].offset   = offsetof(Vertex, pos); // number of bytes from the begining of the per-vertex data
 		// for color
 		attributeDescriptions[1].binding  = 0; // index of the per-vertex data
@@ -95,7 +95,7 @@ struct Vertex
 		// for texture coordinates
 		attributeDescriptions[2].binding  = 0; // index of the per-vertex data
 		attributeDescriptions[2].location = 2; // references the location directive of the input in the vertex shader.
-		attributeDescriptions[2].format   = VK_FORMAT_R32G32B32_SFLOAT; // type of data; color has 3 floats
+		attributeDescriptions[2].format   = VK_FORMAT_R32G32_SFLOAT; // type of data; color has 3 floats
 		attributeDescriptions[2].offset   = offsetof(Vertex, texCoord); // number of bytes from the begining of the per-vertex data
 		return attributeDescriptions;
 	}
@@ -197,9 +197,14 @@ private:
 	void CreateTextureImage();
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	VkImageView CreateImageView(VkImage image, VkFormat format);
+	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 	void CreateTextureImageView();
 	void CreateTextureSampler();
+
+	void CreateDepthResources();
+	VkFormat FindSupportedFormat(const std::vector<VkFormat>& canditateFormats, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat FindDepthFormat();
+	bool HasStencilComponent(VkFormat format);
 
 private:
 	std::string m_Title;
@@ -274,4 +279,9 @@ private:
 	VkDeviceMemory m_TextureImageMemory;
 	VkImageView m_TextureImageView;
 	VkSampler m_TextureSampler;
+
+	// depth buffer
+	VkImage m_DepthImage;
+	VkDeviceMemory m_DepthImageMemory;
+	VkImageView m_DepthImageView;
 };

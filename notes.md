@@ -294,3 +294,13 @@
 ### Combined Image Sampler
 * Combined image sampler is a new type of descriptor.
 * It makes it possible for the shaders to image resources through a sampler.
+
+
+## Depth buffering
+* depth buffer is an attachment that stores depth for each position.
+* Vulkan depth range = 0 to 1
+	* OpenGl depth range = -1 to 1
+	* so we use `GLM_FORCE_DEPTH_ZERO_TO_ONE`
+* similar to the color attachment, depth attachment is also based on image. But for depth attachment, the swapchain will not automatically create depth images.
+* because only one draw operation is running at once, we only need one depth image.
+* a subpass can only use a single depth + stencil buffer 

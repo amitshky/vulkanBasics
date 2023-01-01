@@ -60,3 +60,7 @@ OR (using bat scripts from `scripts` folder)
 * Sierpinski's triangle (checkout `sierpinski` branch)
 
 	<img src="img/sierpinski.png" width=450>
+
+* Depth buffer
+
+	<img src="img/depth buffer.png" width=450>
