@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <cstdlib>
 
-#include "application.hpp"
+#include "core/application.h"
 
 
 int main()

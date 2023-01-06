@@ -13,7 +13,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
-#include "camera.h"
+#include "renderer/camera.h"
 
 
 // Validation layers settings
