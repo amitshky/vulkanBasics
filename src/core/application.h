@@ -6,41 +6,20 @@
 #include <optional>
 #include <chrono>
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#include "core/window.h"
+#include "renderer/vulkanContext.h"
 #include "renderer/camera.h"
 
-
-// Validation layers settings
-#ifdef NDEBUG // Release mode
-	const bool enableValidationLayers = false;
-#else         // Debug mode
-	const bool enableValidationLayers = true;
-#endif
-
-const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
-};
 
 const std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
-
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, 
-	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
-	const VkAllocationCallbacks* pAllocator, 
-	VkDebugUtilsMessengerEXT* pDebugMessenger
-);
-
-void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
 
 struct QueueFamilyIndices
@@ -123,22 +102,9 @@ public:
 	void Run();
 
 private:
-	void InitWindow();
 	void InitVulkan();
+	void RegisterEvents();
 	void Cleanup();
-	void CreateVulkanInstance();
-	bool CheckValidationLayerSupport();
-	std::vector<const char*> GetRequiredExtensions();  // returns a required list of extensions based on whether validation layers are enabled or not
-	
-	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback( // `VKAPI_ATTR` and `VKAPI_CALL` ensures the right signature for Vulkan 
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
-		VkDebugUtilsMessageTypeFlagsEXT messageType, 
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbakck,
-		void* pUserData
-	);
-
-	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& debugMessengerInfo);
-	void SetupDebugMessenger();
 
 	void PickPhysicalDevice();
 	bool IsDeviceSuitable(VkPhysicalDevice physicalDevice);
@@ -207,12 +173,8 @@ private:
 	bool HasStencilComponent(VkFormat format);
 
 private:
-	std::string m_Title;
-	int32_t m_Width;
-	int32_t m_Height;
-	GLFWwindow* m_Window;
-	VkInstance m_VulkanInstance;
-	VkDebugUtilsMessengerEXT m_DebugMessenger; // handle for DebugCallback
+	Window m_Window;
+	VulkanContext m_VulkanContext;
 
 	// devices and queues
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
@@ -262,7 +224,7 @@ private:
 
 	// check for resize
 	bool m_FramebufferResized = false;
-
+	
 	VkBuffer m_VertexBuffer;
 	VkDeviceMemory m_VertexBufferMemory;
 	VkBuffer m_IndexBuffer;

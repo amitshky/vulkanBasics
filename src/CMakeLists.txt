@@ -1,6 +1,8 @@
 add_executable(
 	${PROJECT_NAME}
 	main.cpp
-	application.cpp
-	camera.cpp
+	core/application.cpp
+	core/window.cpp
+	renderer/vulkanContext.cpp
+	renderer/camera.cpp
 )

@@ -33,35 +33,13 @@ std::vector<uint16_t> indices = {
 };
 
 
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, 
-	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
-	const VkAllocationCallbacks* pAllocator, 
-	VkDebugUtilsMessengerEXT* pDebugMessenger
-)
-{
-	// requires a valid instance to have been created
-	// so right now we cannot debug any issues in vkCreateInstance
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"); // returns nullptr if the function couldn't be loaded
-	if (func != nullptr)
-		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-	else
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-}
 
-void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
-{
-	// must be destroyed before instance is destroyed
-	// so right now we cannot debug any issues in vkDestroyInstance
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-	if (func != nullptr)
-		func(instance, debugMessenger, pAllocator);
-}
 
 
 Application::Application(const std::string& title, int32_t width, int32_t height)
-	: m_Title(title), m_Width(width), m_Height(height), m_Camera(width / (float)height)
+	: m_Window{title, width, height}, m_VulkanContext{title}, m_Camera{width / (float)height}
 {
-	InitWindow();
+	RegisterEvents();
 	InitVulkan();
 }
 
@@ -73,7 +51,8 @@ Application::~Application()
 void Application::Run()
 {
 	float prevFrameRate = 0.0f;
-	while (!glfwWindowShouldClose(m_Window))
+	// TODO: change this to check for isRunning (member variable of this class)
+	while (!glfwWindowShouldClose(m_Window.GetWindowContext()))
 	{
 		// calculating delta time
 		float currentFrameTime = static_cast<float>(glfwGetTime());
@@ -82,7 +61,7 @@ void Application::Run()
 
 		//printf("\r%8.2f fps", 1 / m_DeltaTime);
 
-		m_Camera.OnUpdate(m_Window, m_DeltaTime, m_SwapchainExtent.width, m_SwapchainExtent.height);
+		m_Camera.OnUpdate(m_Window.GetWindowContext(), m_DeltaTime, m_SwapchainExtent.width, m_SwapchainExtent.height);
 		DrawFrame();
 
 		ProcessInput();
@@ -92,24 +71,8 @@ void Application::Run()
 	vkDeviceWaitIdle(m_Device);
 }
 
-void Application::InitWindow()
-{
-	glfwInit();
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-	m_Window = glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
-
-	glfwSetWindowUserPointer(m_Window, this); // glfw doesnt call the member function with the right `this`
-	glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
-
-	glfwSetCursorPosCallback(m_Window, OnMouseMove);
-}
-
 void Application::InitVulkan()
 {
-	CreateVulkanInstance();
-	SetupDebugMessenger();
 	CreateWindowSurface();
 	PickPhysicalDevice();
 	CreateLogicalDevice();
@@ -131,6 +94,14 @@ void Application::InitVulkan()
 	CreateDescriptorSets();
 	CreateCommandBuffer();
 	CreateSyncObjects();
+}
+
+void Application::RegisterEvents()
+{
+	glfwSetWindowUserPointer(m_Window.GetWindowContext(), this);
+
+	glfwSetFramebufferSizeCallback(m_Window.GetWindowContext(), FramebufferResizeCallback);
+	glfwSetCursorPosCallback(m_Window.GetWindowContext(), OnMouseMove);
 }
 
 void Application::Cleanup()
@@ -173,166 +144,19 @@ void Application::Cleanup()
 	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 	vkDestroyDevice(m_Device, nullptr);
 
-	if (enableValidationLayers)
-		DestroyDebugUtilsMessengerEXT(m_VulkanInstance, m_DebugMessenger, nullptr);
-
-	vkDestroySurfaceKHR(m_VulkanInstance, m_WindowSurface, nullptr);
-	vkDestroyInstance(m_VulkanInstance, nullptr);
-
-	glfwDestroyWindow(m_Window);
-	glfwTerminate();
-}
-
-void Application::CreateVulkanInstance()
-{
-	if (enableValidationLayers && !CheckValidationLayerSupport())
-		throw std::runtime_error("Validation layers requested, but not available!");
-
-	// info about our application
-	VkApplicationInfo appInfo{};
-	appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName   = m_Title.c_str();
-	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.pEngineName        = "No Engine";
-	appInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.apiVersion         = VK_API_VERSION_1_0;
-
-	// specify which extensions and validation layers to use
-	VkInstanceCreateInfo instanceCreateInfo{};
-	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instanceCreateInfo.pApplicationInfo = &appInfo;
-	// we need extensions to interface with the window
-	uint32_t extensionCount = 0;
-	auto extensions = GetRequiredExtensions();  // returns a required list of extensions based on whether validation layers are enabled or not
-	instanceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
-	instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
-	
-	// specify global validation layers
-	if (enableValidationLayers) // include validation layers if enabled
-	{
-		instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-		instanceCreateInfo.ppEnabledLayerNames = validationLayers.data();
-
-		// debug messenger
-		VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
-		PopulateDebugMessengerCreateInfo(debugMessengerInfo);
-		instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugMessengerInfo;
-	} 
-	else
-	{
-		instanceCreateInfo.enabledLayerCount = 0;
-		instanceCreateInfo.pNext = nullptr;
-	}
-
-	// to check the available extensions
-	// we dont need this for now
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-	std::vector<VkExtensionProperties> availableExtensions{extensionCount};
-	// query extension details
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
-	std::cout << "Available Vulkan extensions (" << extensionCount << "):\n";
-	for (auto& extension : availableExtensions)
-		std::cout << "    " << extension.extensionName << '\n';
-	std::cout << '\n';
-
-
-	// create an instance
-	if (vkCreateInstance(&instanceCreateInfo, nullptr, &m_VulkanInstance) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create Vulkan Instance!");
-}
-
-bool Application::CheckValidationLayerSupport()
-{
-	// check if all of the requested layers are available
-	uint32_t validationLayerCount = 0;
-	vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr); // get validation layer count
-	std::vector<VkLayerProperties> availableLayers{validationLayerCount};
-	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data()); // get the available validation layers
-	
-	for (const auto& layer : validationLayers)
-	{
-		bool layerFound = false;
-
-		for (const auto& layerProperties : availableLayers)
-		{
-			if (std::strcmp(layer, layerProperties.layerName) == 0)
-			{
-				layerFound = true;
-				break;
-			}
-		}
-
-		if (!layerFound)
-			return false;
-	}
-
-	return true;
-}
-
-std::vector<const char*> Application::GetRequiredExtensions()
-{
-	uint32_t extensionCount = 0;
-	const char** extensions; // GLFW extensions
-	extensions = glfwGetRequiredInstanceExtensions(&extensionCount);
-	std::vector<const char*> availableExtensions{extensions, extensions + extensionCount};
-
-	if (enableValidationLayers)
-		availableExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-	
-	return availableExtensions;
-}
-
-// the returned value indicates if the Vulkan call that triggered the validation layer message should be aborted
-// if true, the call is aborted with `VK_ERROR_VALIDATION_FAILED_EXT` error
-VKAPI_ATTR VkBool32 VKAPI_CALL Application::DebugCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,    // the enums are of this are set up in such a way that we can compare using comparision operator 
-															   // to check the severity of the message
-	VkDebugUtilsMessageTypeFlagsEXT messageType,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, // contains the actual details of the message
-	void* pUserData                                            // allows you to pass your own data
-)
-{
-	std::cerr << "Validation layer: " << pCallbackData->pMessage << '\n';
-	return VK_FALSE;
-}
-
-void Application::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& debugMessengerInfo) 
-{
-	// debug messenger provides explicit control over what kind of messages to log
-	debugMessengerInfo = {};
-	debugMessengerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	debugMessengerInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT 
-									   | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-									//   | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-	debugMessengerInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT 
-								   | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-								   | VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT;
-	debugMessengerInfo.pfnUserCallback = DebugCallback; // call back function for debug messenger
-	debugMessengerInfo.pUserData = nullptr; // Optional
-}
-
-void Application::SetupDebugMessenger()
-{
-	if (!enableValidationLayers)
-		return;
-
-	VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
-	PopulateDebugMessengerCreateInfo(debugMessengerInfo);
-
-	if (CreateDebugUtilsMessengerEXT(m_VulkanInstance, &debugMessengerInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
-		throw std::runtime_error("Failed to setup debug messenger!");
+	vkDestroySurfaceKHR(m_VulkanContext.GetInstance(), m_WindowSurface, nullptr);
 }
 
 void Application::PickPhysicalDevice()
 {
 	uint32_t physicalDeviceCount = 0;
-	vkEnumeratePhysicalDevices(m_VulkanInstance, &physicalDeviceCount, nullptr); // get physical device count
+	vkEnumeratePhysicalDevices(m_VulkanContext.GetInstance(), &physicalDeviceCount, nullptr); // get physical device count
 
 	if (physicalDeviceCount == 0)
 		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 
 	std::vector<VkPhysicalDevice> physicalDevices{physicalDeviceCount};
-	vkEnumeratePhysicalDevices(m_VulkanInstance, &physicalDeviceCount, physicalDevices.data());
+	vkEnumeratePhysicalDevices(m_VulkanContext.GetInstance(), &physicalDeviceCount, physicalDevices.data());
 
 	// currently we only work with one device
 	for (const auto& device : physicalDevices)
@@ -470,7 +294,7 @@ void Application::CreateLogicalDevice()
 
 void Application::CreateWindowSurface()
 {
-	if (glfwCreateWindowSurface(m_VulkanInstance, m_Window, nullptr, &m_WindowSurface) != VK_SUCCESS)
+	if (glfwCreateWindowSurface(m_VulkanContext.GetInstance(), m_Window.GetWindowContext(), nullptr, &m_WindowSurface) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create window surface!");
 }
 
@@ -556,7 +380,7 @@ VkExtent2D Application::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabil
 		int width = 0;
 		int height = 0;
 		// screen coordinates might not correspond to pixels in high DPI displays so we cannot just use the original width and height
-		glfwGetFramebufferSize(m_Window, &width, &height);
+		glfwGetFramebufferSize(m_Window.GetWindowContext(), &width, &height);
 
 		VkExtent2D actualExtent = {
 			static_cast<uint32_t>(width),
@@ -1156,11 +980,11 @@ void Application::RecreateSwapchain()
 	int width  = 0;
 	int height = 0;
 
-	glfwGetFramebufferSize(m_Window, &width, &height);
+	glfwGetFramebufferSize(m_Window.GetWindowContext(), &width, &height);
 	while (width == 0 || height == 0)
 	{
 		// wait while window is minimized
-		glfwGetFramebufferSize(m_Window, &width, &height);
+		glfwGetFramebufferSize(m_Window.GetWindowContext(), &width, &height);
 		glfwWaitEvents();
 	}
 
@@ -1477,16 +1301,16 @@ void Application::OnMouseMove(GLFWwindow* window, double xpos, double ypos)
 void Application::ProcessInput()
 {
 	// close window
-	if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(m_Window, true);
+	if (glfwGetKey(m_Window.GetWindowContext(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(m_Window.GetWindowContext(), true);
 
 	// mouse button 1 to move camera
 	// hide cursor when moving camera
-	if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
-		glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	if (glfwGetMouseButton(m_Window.GetWindowContext(), GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+		glfwSetInputMode(m_Window.GetWindowContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	// unhide cursor when camera stops moving
-	else if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
-		glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	else if (glfwGetMouseButton(m_Window.GetWindowContext(), GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE)
+		glfwSetInputMode(m_Window.GetWindowContext(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
 void Application::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
