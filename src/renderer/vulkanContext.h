@@ -26,7 +26,7 @@ public:
 	inline VkInstance GetInstance() const { return m_VulkanInstance; }
 
 private:
-	void InitVulkan(const char* title);
+	void CreateInstance(const char* title);
 	void SetupDebugMessenger();
 
 	bool CheckValidationLayerSupport();

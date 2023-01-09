@@ -8,7 +8,7 @@
 
 VulkanContext::VulkanContext(const std::string& title)
 {
-	InitVulkan(title.c_str());
+	CreateInstance(title.c_str());
 	SetupDebugMessenger();
 }
 
@@ -20,7 +20,7 @@ VulkanContext::~VulkanContext()
 	vkDestroyInstance(m_VulkanInstance, nullptr);
 }
 
-void VulkanContext::InitVulkan(const char* title)
+void VulkanContext::CreateInstance(const char* title)
 {
 	if (enableValidationLayers && !CheckValidationLayerSupport())
 		throw std::runtime_error("Validation layers requested, but not available!");
