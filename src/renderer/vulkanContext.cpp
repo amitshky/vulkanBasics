@@ -5,16 +5,19 @@
 
 #include <GLFW/glfw3.h>
 
+#include "core/vulkanConfig.h"
 
-VulkanContext::VulkanContext(const std::string& title)
+
+VulkanContext::VulkanContext(const char* title, const VulkanConfig* config)
+	: m_Config{config}
 {
-	CreateInstance(title.c_str());
+	CreateInstance(title);
 	SetupDebugMessenger();
 }
 
 VulkanContext::~VulkanContext()
 { 
-	if (enableValidationLayers)
+	if (m_Config->enableValidationLayers)
 		DestroyDebugUtilsMessengerEXT(m_VulkanInstance, m_DebugMessenger, nullptr);
 
 	vkDestroyInstance(m_VulkanInstance, nullptr);
@@ -22,7 +25,7 @@ VulkanContext::~VulkanContext()
 
 void VulkanContext::CreateInstance(const char* title)
 {
-	if (enableValidationLayers && !CheckValidationLayerSupport())
+	if (m_Config->enableValidationLayers && !CheckValidationLayerSupport())
 		throw std::runtime_error("Validation layers requested, but not available!");
 
 	// info about our application
@@ -45,10 +48,10 @@ void VulkanContext::CreateInstance(const char* title)
 	instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
 
 	// specify global validation layers
-	if (enableValidationLayers) // include validation layers if enabled
+	if (m_Config->enableValidationLayers) // include validation layers if enabled
 	{
-		instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-		instanceCreateInfo.ppEnabledLayerNames = validationLayers.data();
+		instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(m_Config->validationLayers.size());
+		instanceCreateInfo.ppEnabledLayerNames = m_Config->validationLayers.data();
 
 		// debug messenger
 		VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
@@ -78,7 +81,7 @@ void VulkanContext::CreateInstance(const char* title)
 
 void VulkanContext::SetupDebugMessenger()
 {
-	if (!enableValidationLayers)
+	if (!m_Config->enableValidationLayers)
 		return;
 
 	VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo{};
@@ -96,7 +99,7 @@ bool VulkanContext::CheckValidationLayerSupport()
 	std::vector<VkLayerProperties> availableLayerProperites{validationLayerCount};
 	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayerProperites.data());
 
-	for (const auto& layer : validationLayers)
+	for (const auto& layer : m_Config->validationLayers)
 	{
 		bool layerFound = false;
 
@@ -123,7 +126,7 @@ std::vector<const char*> VulkanContext::GetRequiredExtensions()
 	extensions = glfwGetRequiredInstanceExtensions(&extensionCount);
 	std::vector<const char*> availableExtensions{extensions, extensions + extensionCount};
 
-	if (enableValidationLayers)
+	if (m_Config->enableValidationLayers)
 		availableExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	
 	return availableExtensions;

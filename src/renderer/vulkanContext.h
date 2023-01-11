@@ -1,26 +1,15 @@
 #pragma once
 
 #include <vector>
-#include <string>
-
 #include <vulkan/vulkan.h>
 
+#include "core/vulkanConfig.h"
 
-// Validation layers settings
-#ifdef NDEBUG // Release mode
-	const bool enableValidationLayers = false;
-#else         // Debug mode
-	const bool enableValidationLayers = true;
-#endif
-
-const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
-};
 
 class VulkanContext
 {
 public:
-	VulkanContext(const std::string& title);
+	VulkanContext(const char* title, const VulkanConfig* config);
 	~VulkanContext();
 
 	inline VkInstance GetInstance() const { return m_VulkanInstance; }
@@ -40,6 +29,7 @@ private:
 	static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
 private:
+	const VulkanConfig* m_Config;
 	VkInstance m_VulkanInstance;
 	VkDebugUtilsMessengerEXT m_DebugMessenger;
 };

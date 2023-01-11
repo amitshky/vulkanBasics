@@ -1,46 +1,22 @@
 #pragma once
 
-#include <string>
 #include <vector>
 #include <array>
 #include <optional>
 #include <chrono>
+#include <memory>
 
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#include "core/vulkanConfig.h"
 #include "core/window.h"
+
 #include "renderer/vulkanContext.h"
+#include "renderer/device.h"
 #include "renderer/camera.h"
 
-
-const std::vector<const char*> deviceExtensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
-
-constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
-
-struct QueueFamilyIndices
-{
-	// std::optional contains no value until you assign something to it
-	// we can check if it contains a value by calling has_value()
-	std::optional<uint32_t> graphicsFamily;
-	std::optional<uint32_t> presentFamily;
-
-	inline bool IsComplete() 
-	{
-		return graphicsFamily.has_value() && presentFamily.has_value(); 
-	}
-};
-
-struct SwapchainSupportDetails
-{
-	VkSurfaceCapabilitiesKHR capabilities;
-	std::vector<VkSurfaceFormatKHR> formats;
-	std::vector<VkPresentModeKHR> presentModes;
-};
 
 struct Vertex
 {
@@ -93,7 +69,7 @@ struct UniformBufferObject
 class Application
 {
 public:
-	Application(const std::string& title, int32_t width, int32_t height);
+	Application(const char* title, int32_t width, int32_t height);
 	~Application();
 
 	Application(const Application&) = delete;
@@ -106,15 +82,8 @@ private:
 	void RegisterEvents();
 	void Cleanup();
 
-	void PickPhysicalDevice();
-	bool IsDeviceSuitable(VkPhysicalDevice physicalDevice);
-	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
-
-	void CreateLogicalDevice();
 	void CreateWindowSurface();
 
-	bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
-	SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice physicalDevice);
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
@@ -173,15 +142,16 @@ private:
 	bool HasStencilComponent(VkFormat format);
 
 private:
-	Window m_Window;
-	VulkanContext m_VulkanContext;
+	const VulkanConfig* m_Config;
 
-	// devices and queues
-	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
-	VkDevice m_Device; // logical device
-	VkQueue m_GraphicsQueue; // handle to graphics queue
+	std::unique_ptr<Window> m_Window;
+	std::unique_ptr<VulkanContext> m_VulkanContext;
+	
+	std::unique_ptr<Camera> m_Camera;
+
 	VkSurfaceKHR m_WindowSurface;
-	VkQueue m_PresentQueue; // handle to presentation queue
+	std::unique_ptr<Device> m_Device;
+
 
 	// swapchain
 	VkSwapchainKHR m_Swapchain;
@@ -229,8 +199,6 @@ private:
 	VkDeviceMemory m_VertexBufferMemory;
 	VkBuffer m_IndexBuffer;
 	VkDeviceMemory m_IndexBufferMemory;
-
-	Camera m_Camera;
 
 	// for delta time
 	float m_LastFrameTime = 0.0f;
