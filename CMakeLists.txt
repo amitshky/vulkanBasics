@@ -10,7 +10,7 @@ add_subdirectory(src)
 add_subdirectory(lib)
 
 if(MSVC)
-	target_compile_options(${PROJECT_NAME} PUBLIC "/W4;/WX;")
+	target_compile_options(${PROJECT_NAME} PUBLIC "/W4;")
 
 elseif(GNU OR Clang)
 	set(GCC_CLANG_COMPILE_OPTIONS "-Wall;-Wextra;-Wshadow;-Wconversion;-Wpedantic;-Werror;")

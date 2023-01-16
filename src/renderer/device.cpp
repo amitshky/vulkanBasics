@@ -58,7 +58,7 @@ void Device::PickPhysicalDevice()
 void Device::CreateLogicalDevice()
 {
 	// create queue
-	QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
+	QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice, m_WindowSurface);
 
 	// we have multiple queues so we create a set of unique queue families
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
@@ -113,7 +113,7 @@ void Device::CreateLogicalDevice()
 
 bool Device::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
 {
-	QueueFamilyIndices indicies = FindQueueFamilies(physicalDevice);
+	QueueFamilyIndices indicies = FindQueueFamilies(physicalDevice, m_WindowSurface);
 
 	// checking for extension availability like swapchain extension availability
 	bool extensionsSupported = CheckDeviceExtensionSupport(physicalDevice);
@@ -122,7 +122,7 @@ bool Device::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
 	bool swapchainAdequate = false;
 	if (extensionsSupported)
 	{
-		SwapchainSupportDetails swapchainSupport = QuerySwapchainSupport(physicalDevice);
+		SwapchainSupportDetails swapchainSupport = QuerySwapchainSupport(physicalDevice, m_WindowSurface);
 		swapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
 	}
 
@@ -132,7 +132,7 @@ bool Device::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
 	return indicies.IsComplete() && extensionsSupported && swapchainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
-QueueFamilyIndices Device::FindQueueFamilies(VkPhysicalDevice physicalDevice)
+QueueFamilyIndices Device::FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface)
 {
 	QueueFamilyIndices indices;
 
@@ -152,7 +152,7 @@ QueueFamilyIndices Device::FindQueueFamilies(VkPhysicalDevice physicalDevice)
 		// the graphics queue and the presentation queue might end up being the same
 		// but we treat them as separate queues
 		VkBool32 presentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_WindowSurface, &presentSupport);
+		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, windowSurface, &presentSupport);
 
 		if (presentSupport)
 			indices.presentFamily = i;
@@ -180,7 +180,7 @@ bool Device::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
 	return requiredExtensions.empty();
 }
 
-SwapchainSupportDetails Device::QuerySwapchainSupport(VkPhysicalDevice physicalDevice)
+SwapchainSupportDetails Device::QuerySwapchainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface)
 {
 	// Simply checking swapchain availability is not enough, 
 	// we need to check if it is supported by our window surface or not
@@ -191,22 +191,22 @@ SwapchainSupportDetails Device::QuerySwapchainSupport(VkPhysicalDevice physicalD
 	SwapchainSupportDetails swapchainDetails{};
 
 	// query surface capabilities
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_WindowSurface, &swapchainDetails.capabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, windowSurface, &swapchainDetails.capabilities);
 	// query surface format
 	uint32_t formatCount = 0;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_WindowSurface, &formatCount, nullptr);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, windowSurface, &formatCount, nullptr);
 	if (formatCount != 0)
 	{
 		swapchainDetails.formats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_WindowSurface, &formatCount, swapchainDetails.formats.data());
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, windowSurface, &formatCount, swapchainDetails.formats.data());
 	}
 	// query supported presentation modes
 	uint32_t presentModeCount = 0;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_WindowSurface, &presentModeCount, nullptr);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, windowSurface, &presentModeCount, nullptr);
 	if (presentModeCount != 0)
 	{
 		swapchainDetails.presentModes.resize(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_WindowSurface, &presentModeCount, swapchainDetails.presentModes.data());
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, windowSurface, &presentModeCount, swapchainDetails.presentModes.data());
 	}
 
 	return swapchainDetails;

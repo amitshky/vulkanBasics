@@ -1,13 +1,15 @@
 #include "window.h"
 
-Window::Window(const std::string& title, int32_t width, int32_t height)
+#include <stdexcept>
+
+
+Window::Window(const char* title, int32_t width, int32_t height)
 	: m_Title{title}
 {
 	glfwInit();
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	//glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	m_Window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+	m_Window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 }
 
 Window::~Window()

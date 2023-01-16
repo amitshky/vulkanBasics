@@ -6,15 +6,20 @@
 #include <chrono>
 #include <memory>
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
-#include "core/vulkanConfig.h"
 #include "core/window.h"
+#include "core/vulkanConfig.h"
 
 #include "renderer/vulkanContext.h"
+#include "renderer/windowSurface.h"
 #include "renderer/device.h"
+#include "renderer/swapchain.h"
 #include "renderer/camera.h"
 
 
@@ -82,20 +87,10 @@ private:
 	void RegisterEvents();
 	void Cleanup();
 
-	void CreateWindowSurface();
-
-	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-	void CreateSwapchain();
-	void CreateImageViews();
-
-	void CreateRenderPass();
 	void CreateGraphicsPipeline();
 	std::vector<char> LoadShader(const std::string& filepath);
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
-	void CreateFramebuffers();
 	void CreateCommandPool();
 	void CreateCommandBuffer();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -103,16 +98,11 @@ private:
 	void CreateSyncObjects();
 	void DrawFrame();
 
-	void CleanupSwapchain();
-	void RecreateSwapchain();
-	
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 	void CreateVertexBuffer();
 	void CreateIndexBuffer();
-
-	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	VkCommandBuffer BeginSingleTimeCommands();
 	void EndSingleTimeCommands(VkCommandBuffer cmdBuff);
@@ -127,41 +117,23 @@ private:
 	void ProcessInput();
 	static void OnMouseMove(GLFWwindow* window, double xpos, double ypos);
 
-	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
-		VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void CreateTextureImage();
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 	void CreateTextureImageView();
 	void CreateTextureSampler();
-
-	void CreateDepthResources();
-	VkFormat FindSupportedFormat(const std::vector<VkFormat>& canditateFormats, VkImageTiling tiling, VkFormatFeatureFlags features);
-	VkFormat FindDepthFormat();
-	bool HasStencilComponent(VkFormat format);
 
 private:
 	const VulkanConfig* m_Config;
 
 	std::unique_ptr<Window> m_Window;
 	std::unique_ptr<VulkanContext> m_VulkanContext;
+	std::unique_ptr<WindowSurface> m_WindowSurface;
 	
 	std::unique_ptr<Camera> m_Camera;
 
-	VkSurfaceKHR m_WindowSurface;
 	std::unique_ptr<Device> m_Device;
-
-
-	// swapchain
-	VkSwapchainKHR m_Swapchain;
-	std::vector<VkImage> m_SwapchainImages;
-	VkFormat m_SwapchainImageFormat;
-	VkExtent2D m_SwapchainExtent;
-	std::vector<VkImageView> m_SwapchainImageviews;
-
-	// render pass
-	VkRenderPass m_RenderPass;
+	std::unique_ptr<Swapchain> m_Swapchain;
 
 	// uniform buffer descriptor layout
 	VkDescriptorSetLayout m_DescriptorSetLayout;
@@ -175,9 +147,6 @@ private:
 	// pipeline
 	VkPipelineLayout m_PipelineLayout;
 	VkPipeline m_GraphicsPipeline;
-
-	// framebuffer
-	std::vector<VkFramebuffer> m_SwapchainFramebuffers;
 
 	// command buffer
 	VkCommandPool m_CommandPool;
@@ -209,9 +178,4 @@ private:
 	VkDeviceMemory m_TextureImageMemory;
 	VkImageView m_TextureImageView;
 	VkSampler m_TextureSampler;
-
-	// depth buffer
-	VkImage m_DepthImage;
-	VkDeviceMemory m_DepthImageMemory;
-	VkImageView m_DepthImageView;
 };

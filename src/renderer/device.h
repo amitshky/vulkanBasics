@@ -38,9 +38,9 @@ public:
 	inline VkQueue GetPresentQueue() const { return m_GraphicsQueue; }
 	
 	// TODO: move this to swapchain class
-	SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice physicalDevice);
+	static SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface);
 	// TODO: maybe make a separate Queue class
-	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
+	static QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface);
 
 private:
 	void PickPhysicalDevice();
