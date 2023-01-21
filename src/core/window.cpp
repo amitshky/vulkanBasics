@@ -7,7 +7,7 @@ Window::Window(const char* title, int32_t width, int32_t height)
 	: m_Title{title}
 {
 	glfwInit();
-	//glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 	m_Window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 }
