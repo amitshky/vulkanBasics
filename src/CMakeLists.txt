@@ -9,5 +9,7 @@ add_executable(
 	renderer/windowSurface.cpp
 	renderer/device.cpp
 	renderer/swapchain.cpp
+	renderer/shader.cpp
+	renderer/pipeline.cpp
 	renderer/camera.cpp
 )

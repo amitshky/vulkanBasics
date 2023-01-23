@@ -4,7 +4,8 @@
 
 
 WindowSurface::WindowSurface(GLFWwindow* windowContext, VkInstance vulkanInstance)
-	: m_WindowContext{windowContext}, m_VulkanInstance{vulkanInstance}
+	: m_WindowContext{windowContext}, 
+	  m_VulkanInstance{vulkanInstance}
 {
 	CreateWindowSurface();
 }

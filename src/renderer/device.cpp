@@ -6,7 +6,10 @@
 
 
 Device::Device()
-	: m_VulkanInstance{nullptr}, m_WindowSurface{nullptr}, m_Config{nullptr}
+	: m_VulkanInstance{nullptr}, 
+	  m_WindowSurface{nullptr}, 
+	  m_Config{nullptr},
+	  m_PhysicalDevice{VK_NULL_HANDLE}
 {
 
 }

@@ -55,7 +55,7 @@ private:
 	VkSurfaceKHR m_WindowSurface;
 	const VulkanConfig* m_Config;
 
-	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
+	VkPhysicalDevice m_PhysicalDevice;
 	VkDevice m_Device;
 
 	VkQueue m_GraphicsQueue;

@@ -20,46 +20,9 @@
 #include "renderer/windowSurface.h"
 #include "renderer/device.h"
 #include "renderer/swapchain.h"
+#include "renderer/pipeline.h"
 #include "renderer/camera.h"
 
-
-struct Vertex
-{
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 texCoord;
-
-	static VkVertexInputBindingDescription GetBindingDescription()
-	{
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding   = 0; // specifies the index of the binding in the array of bindings
-		bindingDescription.stride    = sizeof(Vertex); // specifies the number of bytes from one entry to the next
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX; // move to the next data entry after each vertex
-
-		return bindingDescription;
-	}
-
-	static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions()
-	{
-		// for position
-		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
-		attributeDescriptions[0].binding  = 0; // index of the per-vertex data
-		attributeDescriptions[0].location = 0; // references the location directive of the input in the vertex shader.
-		attributeDescriptions[0].format   = VK_FORMAT_R32G32B32_SFLOAT; // type of data; position has 2 floats
-		attributeDescriptions[0].offset   = offsetof(Vertex, pos); // number of bytes from the begining of the per-vertex data
-		// for color
-		attributeDescriptions[1].binding  = 0; // index of the per-vertex data
-		attributeDescriptions[1].location = 1; // references the location directive of the input in the vertex shader.
-		attributeDescriptions[1].format   = VK_FORMAT_R32G32B32_SFLOAT; // type of data; color has 3 floats
-		attributeDescriptions[1].offset   = offsetof(Vertex, color); // number of bytes from the begining of the per-vertex data
-		// for texture coordinates
-		attributeDescriptions[2].binding  = 0; // index of the per-vertex data
-		attributeDescriptions[2].location = 2; // references the location directive of the input in the vertex shader.
-		attributeDescriptions[2].format   = VK_FORMAT_R32G32_SFLOAT; // type of data; color has 3 floats
-		attributeDescriptions[2].offset   = offsetof(Vertex, texCoord); // number of bytes from the begining of the per-vertex data
-		return attributeDescriptions;
-	}
-};
 
 struct UniformBufferObject 
 {
@@ -87,10 +50,6 @@ private:
 	void RegisterEvents();
 	void Cleanup();
 
-	void CreateGraphicsPipeline();
-	std::vector<char> LoadShader(const std::string& filepath);
-	VkShaderModule CreateShaderModule(const std::vector<char>& code);
-
 	void CreateCommandPool();
 	void CreateCommandBuffer();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -108,7 +67,6 @@ private:
 	void EndSingleTimeCommands(VkCommandBuffer cmdBuff);
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
-	void CreateDescriptorSetLayout();
 	void CreateUniformBuffers();
 	void UpdateUniformBuffer(uint32_t currentFrameIdx);
 	void CreateDescriptorPool();
@@ -130,23 +88,19 @@ private:
 	std::unique_ptr<VulkanContext> m_VulkanContext;
 	std::unique_ptr<WindowSurface> m_WindowSurface;
 	
-	std::unique_ptr<Camera> m_Camera;
-
 	std::unique_ptr<Device> m_Device;
 	std::unique_ptr<Swapchain> m_Swapchain;
+	std::unique_ptr<Pipeline> m_GraphicsPipeline;
+	
+	std::unique_ptr<Camera> m_Camera;
 
 	// uniform buffer descriptor layout
-	VkDescriptorSetLayout m_DescriptorSetLayout;
 	std::vector<VkBuffer> m_UniformBuffers;
 	std::vector<VkDeviceMemory> m_UniformBuffersMemory;
 	std::vector<void*> m_UniformBuffersMapped;
 	// descriptor pool
 	VkDescriptorPool m_DescriptorPool;
 	std::vector<VkDescriptorSet> m_DescriptorSets;
-
-	// pipeline
-	VkPipelineLayout m_PipelineLayout;
-	VkPipeline m_GraphicsPipeline;
 
 	// command buffer
 	VkCommandPool m_CommandPool;
