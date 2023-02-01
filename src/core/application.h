@@ -21,6 +21,7 @@
 #include "renderer/device.h"
 #include "renderer/swapchain.h"
 #include "renderer/pipeline.h"
+#include "renderer/commandBuffers.h"
 #include "renderer/camera.h"
 
 
@@ -50,8 +51,6 @@ private:
 	void RegisterEvents();
 	void Cleanup();
 
-	void CreateCommandPool();
-	void CreateCommandBuffer();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 	void CreateSyncObjects();
@@ -63,8 +62,6 @@ private:
 	void CreateVertexBuffer();
 	void CreateIndexBuffer();
 
-	VkCommandBuffer BeginSingleTimeCommands();
-	void EndSingleTimeCommands(VkCommandBuffer cmdBuff);
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 	void CreateUniformBuffers();
@@ -91,6 +88,8 @@ private:
 	std::unique_ptr<Device> m_Device;
 	std::unique_ptr<Swapchain> m_Swapchain;
 	std::unique_ptr<Pipeline> m_GraphicsPipeline;
+
+	std::unique_ptr<CommandBuffers> m_CommandBuffers;
 	
 	std::unique_ptr<Camera> m_Camera;
 
@@ -101,10 +100,6 @@ private:
 	// descriptor pool
 	VkDescriptorPool m_DescriptorPool;
 	std::vector<VkDescriptorSet> m_DescriptorSets;
-
-	// command buffer
-	VkCommandPool m_CommandPool;
-	std::vector<VkCommandBuffer> m_CommandBuffers;
 
 	// synchronization objects
 	// semaphores to sync gpu operations and fence to sync cpu operation with the gpu operation

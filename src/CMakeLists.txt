@@ -11,5 +11,6 @@ add_executable(
 	renderer/swapchain.cpp
 	renderer/shader.cpp
 	renderer/pipeline.cpp
+	renderer/commandBuffers.cpp
 	renderer/camera.cpp
 )

@@ -13,6 +13,8 @@
 #include "stb_image/stb_image.h"
 
 
+// TODO: pass objects like device (not VkDevice) and stuff not just specifically wht is needed like physicaldevice
+
 // vertex data
 std::vector<Vertex> vertices{
 	{ { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 0; position: top-left;     color: red
@@ -56,6 +58,7 @@ Application::Application(const char* title, int32_t width, int32_t height)
 	  m_Device{std::make_unique<Device>(m_VulkanContext->GetInstance(), m_WindowSurface->GetSurface(), m_Config)},
 	  m_Swapchain{std::make_unique<Swapchain>(m_Window->GetWindowContext(), m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_WindowSurface->GetSurface())},
 	  m_GraphicsPipeline{std::make_unique<Pipeline>(m_Device->GetDevice(), m_Swapchain->GetRenderPass())},
+	  m_CommandBuffers{std::make_unique<CommandBuffers>(&config, m_WindowSurface->GetSurface(), m_Device->GetPhysicalDevice(), m_Device->GetDevice(), m_Device->GetGraphicsQueue())},
 	  m_Camera{std::make_unique<Camera>(width / (float)height)}
 {
 	RegisterEvents();
@@ -92,7 +95,6 @@ void Application::Run()
 
 void Application::InitVulkan()
 {
-	CreateCommandPool();
 	CreateTextureImage();
 	CreateTextureImageView();
 	CreateTextureSampler();
@@ -101,7 +103,6 @@ void Application::InitVulkan()
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
-	CreateCommandBuffer();
 	CreateSyncObjects();
 }
 
@@ -142,38 +143,9 @@ void Application::Cleanup()
 	// cleanup vertex buffer
 	vkDestroyBuffer(m_Device->GetDevice(), m_VertexBuffer, nullptr);
 	vkFreeMemory(m_Device->GetDevice(), m_VertexBufferMemory, nullptr);
-
-	vkDestroyCommandPool(m_Device->GetDevice(), m_CommandPool, nullptr);
 }
 
-void Application::CreateCommandPool()
-{
-	QueueFamilyIndices queueFamilyIndices = Device::FindQueueFamilies(m_Device->GetPhysicalDevice(), m_WindowSurface->GetSurface());
-
-	VkCommandPoolCreateInfo commandPoolCreateInfo{};
-	commandPoolCreateInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // allows command buffers to be recorded individually
-	commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();       // command pools can only allocate command buffers that are submitted by a single type of queue
-
-	if (vkCreateCommandPool(m_Device->GetDevice(), &commandPoolCreateInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create command pools!");
-}
-
-void Application::CreateCommandBuffer()
-{
-	m_CommandBuffers.resize(m_Config->MAX_FRAMES_IN_FLIGHT);
-
-	// command buffer allocation
-	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-	commandBufferAllocateInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	commandBufferAllocateInfo.commandPool        = m_CommandPool;
-	commandBufferAllocateInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // can be submitted to a queue for execution, but cannot be called from other command buffers
-	commandBufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
-
-	if (vkAllocateCommandBuffers(m_Device->GetDevice(), &commandBufferAllocateInfo, m_CommandBuffers.data()) != VK_SUCCESS)
-		throw std::runtime_error("Failed to allocate command buffers!");
-}
-
+// TODO: move this to renderer class
 void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
 	VkCommandBufferBeginInfo commandBufferBeginInfo{};
@@ -286,8 +258,8 @@ void Application::DrawFrame()
 	vkResetFences(m_Device->GetDevice(), 1, &m_InFlightFences[m_CurrentFrameIdx]);
 
 	// record the command buffer
-	vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrameIdx], 0);
-	RecordCommandBuffer(m_CommandBuffers[m_CurrentFrameIdx], imageIndex);
+	m_CommandBuffers->ResetCommandBuffer(m_CurrentFrameIdx);
+	RecordCommandBuffer(m_CommandBuffers->GetCommandBufferAtIndex(m_CurrentFrameIdx), imageIndex);
 
 	UpdateUniformBuffer(m_CurrentFrameIdx);
 	
@@ -301,7 +273,7 @@ void Application::DrawFrame()
 	submitInfo.pWaitSemaphores    = waitSemaphores;
 	submitInfo.pWaitDstStageMask  = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers    = &m_CommandBuffers[m_CurrentFrameIdx]; // command buffer to be submitted for execution
+	submitInfo.pCommandBuffers    = &m_CommandBuffers->GetCommandBufferAtIndex(m_CurrentFrameIdx); // command buffer to be submitted for execution
 	VkSemaphore signalSemaphores[]  = { m_RenderFinishedSemaphores[m_CurrentFrameIdx] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores    = signalSemaphores;
@@ -402,50 +374,9 @@ void Application::CreateVertexBuffer()
 	// so that the mapped memory always matches the contents of the allocated memory
 }
 
-VkCommandBuffer Application::BeginSingleTimeCommands()
-{
-	// transfer operations are also executed using command buffers
-	// so we allocate a temporary command buffer
-	VkCommandBufferAllocateInfo cmdBuffAllocInfo{};
-	cmdBuffAllocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cmdBuffAllocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cmdBuffAllocInfo.commandPool        = m_CommandPool;
-	cmdBuffAllocInfo.commandBufferCount = 1;
-
-	VkCommandBuffer cmdBuff;
-	vkAllocateCommandBuffers(m_Device->GetDevice(), &cmdBuffAllocInfo, &cmdBuff);
-
-	// immediately start recording the command buffer
-	VkCommandBufferBeginInfo cmdBuffBegin{};
-	cmdBuffBegin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cmdBuffBegin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(cmdBuff, &cmdBuffBegin);
-
-	return cmdBuff;
-}
-
-void Application::EndSingleTimeCommands(VkCommandBuffer cmdBuff)
-{
-	vkEndCommandBuffer(cmdBuff);
-
-	// submit the queue
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers    = &cmdBuff;
-
-	// we dont necessarily need a transfer queue, graphics queue can handle it
-	vkQueueSubmit(m_Device->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-	// we can use a fence to wait; this can help to schedule multiple transfers simultaneously
-	vkQueueWaitIdle(m_Device->GetGraphicsQueue());
-
-	vkFreeCommandBuffers(m_Device->GetDevice(), m_CommandPool, 1, &cmdBuff);
-}
-
 void Application::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
-	VkCommandBuffer cmdBuff = BeginSingleTimeCommands();
+	VkCommandBuffer cmdBuff = m_CommandBuffers->BeginSingleTimeCommands();
 
 	VkBufferCopy copyRegion{};
 	copyRegion.srcOffset = 0;
@@ -454,7 +385,7 @@ void Application::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
 	// transfer the contents of the buffers
 	vkCmdCopyBuffer(cmdBuff, srcBuffer, dstBuffer, 1, &copyRegion);
 	
-	EndSingleTimeCommands(cmdBuff);
+	m_CommandBuffers->EndSingleTimeCommands(cmdBuff);
 }
 
 void Application::CreateIndexBuffer()
@@ -659,7 +590,7 @@ void Application::TransitionImageLayout(VkImage image, VkFormat format, VkImageL
 {
 	// to copy the buffer into the image, we need the image to be in the right layout first
 	// one way to perform layout transitions is the use image memory barrier
-	VkCommandBuffer cmdBuff = BeginSingleTimeCommands();
+	VkCommandBuffer cmdBuff = m_CommandBuffers->BeginSingleTimeCommands();
 
 	VkImageMemoryBarrier imgMemBarrier{};
 	imgMemBarrier.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -705,12 +636,12 @@ void Application::TransitionImageLayout(VkImage image, VkFormat format, VkImageL
 	
 	vkCmdPipelineBarrier(cmdBuff, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &imgMemBarrier);
 
-	EndSingleTimeCommands(cmdBuff);
+	m_CommandBuffers->EndSingleTimeCommands(cmdBuff);
 }
 
 void Application::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
-	VkCommandBuffer cmdBuff = BeginSingleTimeCommands();
+	VkCommandBuffer cmdBuff = m_CommandBuffers->BeginSingleTimeCommands();
 
 	// specify which part of the buffer is going to be copied to which part of the image
 	VkBufferImageCopy region{};
@@ -729,7 +660,7 @@ void Application::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t wid
 
 	vkCmdCopyBufferToImage(cmdBuff, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	
-	EndSingleTimeCommands(cmdBuff);
+	m_CommandBuffers->EndSingleTimeCommands(cmdBuff);
 }
 
 void Application::CreateTextureImageView()
