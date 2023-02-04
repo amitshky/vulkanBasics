@@ -3,10 +3,11 @@
 #include <stdexcept>
 
 #include "shader.h"
+#include "renderer/buffer/vertexBuffer.h"
 
 
-Pipeline::Pipeline(VkDevice device, VkRenderPass renderPass)
-	: m_Device{device}, 
+Pipeline::Pipeline(VkDevice deviceVk, VkRenderPass renderPass)
+	: m_DeviceVk{deviceVk}, 
 	  m_RenderPass{renderPass}
 {
 	CreateDescriptorSetLayout();
@@ -15,17 +16,17 @@ Pipeline::Pipeline(VkDevice device, VkRenderPass renderPass)
 
 Pipeline::~Pipeline()
 {
-	vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(m_DeviceVk, m_DescriptorSetLayout, nullptr);
 
-	vkDestroyPipeline(m_Device, m_Pipeline, nullptr);
-	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+	vkDestroyPipeline(m_DeviceVk, m_Pipeline, nullptr);
+	vkDestroyPipelineLayout(m_DeviceVk, m_PipelineLayout, nullptr);
 }
 
 void Pipeline::CreateGraphicsPipeline()
 {
 	// shaders
-	Shader m_VertexShader{"assets/shaders/gradientTriangle.vert.spv", ShaderType::VERTEX, m_Device};
-	Shader m_FragmentShader{"assets/shaders/gradientTriangle.frag.spv", ShaderType::FRAGMENT, m_Device};
+	Shader m_VertexShader{"assets/shaders/gradientTriangle.vert.spv", ShaderType::VERTEX, m_DeviceVk};
+	Shader m_FragmentShader{"assets/shaders/gradientTriangle.frag.spv", ShaderType::FRAGMENT, m_DeviceVk};
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = { m_VertexShader.GetShaderStage(), m_FragmentShader.GetShaderStage() };
 
@@ -141,7 +142,7 @@ void Pipeline::CreateGraphicsPipeline()
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	pipelineLayoutCreateInfo.pPushConstantRanges    = nullptr;
 
-	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(m_DeviceVk, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create graphics pipeline!");
 
 
@@ -169,7 +170,7 @@ void Pipeline::CreateGraphicsPipeline()
 
 	// multiple graphicsPipelineCreateInfo can be passed
 	// pipelineCache (2nd param) can be used to store and reuse data
-	if (vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_Pipeline) != VK_SUCCESS)
+	if (vkCreateGraphicsPipelines(m_DeviceVk, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_Pipeline) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create graphics pipeline!");
 }
 
@@ -196,6 +197,6 @@ void Pipeline::CreateDescriptorSetLayout()
 	descriptorLayoutCreateInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 	descriptorLayoutCreateInfo.pBindings    = bindings.data();
 
-	if (vkCreateDescriptorSetLayout(m_Device, &descriptorLayoutCreateInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(m_DeviceVk, &descriptorLayoutCreateInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create descriptor set layout!");
 }

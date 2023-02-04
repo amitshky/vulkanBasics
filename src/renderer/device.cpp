@@ -23,7 +23,7 @@ Device::Device(VkInstance vulkanInstance, VkSurfaceKHR windowSurface, const Vulk
 
 Device::~Device()
 {
-	vkDestroyDevice(m_Device, nullptr);
+	vkDestroyDevice(m_DeviceVk, nullptr);
 }
 
 void Device::PickPhysicalDevice()
@@ -106,12 +106,12 @@ void Device::CreateLogicalDevice()
 		deviceCreateInfo.enabledLayerCount = 0;
 	}
 
-	if (vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, nullptr, &m_Device) != VK_SUCCESS)
+	if (vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, nullptr, &m_DeviceVk) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create logcial device!");
 
 	// get the queue handle
-	vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
-	vkGetDeviceQueue(m_Device, indices.presentFamily.value(),  0, &m_PresentQueue);
+	vkGetDeviceQueue(m_DeviceVk, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
+	vkGetDeviceQueue(m_DeviceVk, indices.presentFamily.value(),  0, &m_PresentQueue);
 }
 
 bool Device::IsDeviceSuitable(VkPhysicalDevice physicalDevice)

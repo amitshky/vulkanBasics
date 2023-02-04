@@ -11,16 +11,15 @@
 class Swapchain
 {
 public:
-	// TODO: try if passing a const ref of thw Window class itself would work (because the obj is a unique ptr)
-	// and also make the static functions in the device class into regular member functions
-	Swapchain(GLFWwindow* windowContext, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface);
+	Swapchain(GLFWwindow* windowContext, const Device* device, VkSurfaceKHR windowSurface);
 	~Swapchain();
 
 	void RecreateSwapchain();
 
-	static void CreateImage(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
+	// TODO: move these to utils or somewhere
+	static void CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
 		VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-	static VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+	static VkImageView CreateImageView(VkDevice deviceVk, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 	static uint32_t FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	inline VkSwapchainKHR GetSwapchain() const { return m_Swapchain; }
@@ -40,7 +39,7 @@ public:
 	inline VkImageView GetDepthImageView() const { return m_DepthImageView; }
 
 	inline std::vector<VkFramebuffer> GetFramebuffers() const { return m_SwapchainFramebuffers; }
-	inline VkFramebuffer GetFramebufferAtIndex(const int index) const { return m_SwapchainFramebuffers[index]; }
+	inline VkFramebuffer GetFramebufferAtIndex(const uint32_t index) const { return m_SwapchainFramebuffers[index]; }
 
 private:
 	void CreateSwapchain();
@@ -61,8 +60,7 @@ private:
 
 private:
 	GLFWwindow* m_WindowContext;
-	VkDevice m_Device;
-	VkPhysicalDevice m_PhysicalDevice;
+	const Device* m_Device;
 	VkSurfaceKHR m_WindowSurface;
 
 	VkSwapchainKHR m_Swapchain;

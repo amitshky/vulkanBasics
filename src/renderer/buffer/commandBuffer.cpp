@@ -1,42 +1,40 @@
-#include "commandBuffers.h"
+#include "commandBuffer.h"
 
 #include <stdexcept>
 #include <array>
 
 
-CommandBuffers::CommandBuffers(const VulkanConfig* config, VkSurfaceKHR windowSurface, VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue)
-	: m_Config{config},
+CommandBuffer::CommandBuffer(const int maxFramesInFlight, VkSurfaceKHR windowSurface, const Device* device)
+	: m_MaxFramesInFlight{maxFramesInFlight},
 	  m_WindowSurface{windowSurface},
-	  m_PhysicalDevice{physicalDevice},
-	  m_Device{device},
-	  m_GraphicsQueue{graphicsQueue}
+	  m_Device{device}
 {
 	CreateCommandPool();
 	CreateCommandBuffers();
 }
 
-CommandBuffers::~CommandBuffers()
+CommandBuffer::~CommandBuffer()
 {
 	// command buffers are automatically destroyed when their command pool is destroyed
-	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
+	vkDestroyCommandPool(m_Device->GetDevice(), m_CommandPool, nullptr);
 }
 
-void CommandBuffers::CreateCommandPool()
+void CommandBuffer::CreateCommandPool()
 {
-	QueueFamilyIndices queueFamilyIndices = Device::FindQueueFamilies(m_PhysicalDevice, m_WindowSurface);
+	QueueFamilyIndices queueFamilyIndices = Device::FindQueueFamilies(m_Device->GetPhysicalDevice(), m_WindowSurface);
 
 	VkCommandPoolCreateInfo commandPoolCreateInfo{};
 	commandPoolCreateInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	commandPoolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // allows command buffers to be recorded individually
 	commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();       // command pools can only allocate command buffers that are submitted by a single type of queue
 
-	if (vkCreateCommandPool(m_Device, &commandPoolCreateInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
+	if (vkCreateCommandPool(m_Device->GetDevice(), &commandPoolCreateInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create command pools!");
 }
 
-void CommandBuffers::CreateCommandBuffers()
+void CommandBuffer::CreateCommandBuffers()
 {
-	m_CommandBuffers.resize(m_Config->MAX_FRAMES_IN_FLIGHT);
+	m_CommandBuffers.resize(m_MaxFramesInFlight);
 
 	// command buffer allocation
 	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
@@ -45,16 +43,16 @@ void CommandBuffers::CreateCommandBuffers()
 	commandBufferAllocateInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // can be submitted to a queue for execution, but cannot be called from other command buffers
 	commandBufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
 
-	if (vkAllocateCommandBuffers(m_Device, &commandBufferAllocateInfo, m_CommandBuffers.data()) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(m_Device->GetDevice(), &commandBufferAllocateInfo, m_CommandBuffers.data()) != VK_SUCCESS)
 		throw std::runtime_error("Failed to allocate command buffers!");
 }
 
-void CommandBuffers::ResetCommandBuffer(int32_t index)
+void CommandBuffer::ResetCommandBuffer(int32_t index)
 {
 	vkResetCommandBuffer(m_CommandBuffers[index], 0);
 }
 
-VkCommandBuffer CommandBuffers::BeginSingleTimeCommands()
+VkCommandBuffer CommandBuffer::BeginSingleTimeCommands() const
 {
 	// transfer operations are also executed using command buffers
 	// so we allocate a temporary command buffer
@@ -65,7 +63,7 @@ VkCommandBuffer CommandBuffers::BeginSingleTimeCommands()
 	cmdBuffAllocInfo.commandBufferCount = 1;
 
 	VkCommandBuffer cmdBuff;
-	vkAllocateCommandBuffers(m_Device, &cmdBuffAllocInfo, &cmdBuff);
+	vkAllocateCommandBuffers(m_Device->GetDevice(), &cmdBuffAllocInfo, &cmdBuff);
 
 	// immediately start recording the command buffer
 	VkCommandBufferBeginInfo cmdBuffBegin{};
@@ -77,7 +75,7 @@ VkCommandBuffer CommandBuffers::BeginSingleTimeCommands()
 	return cmdBuff;
 }
 
-void CommandBuffers::EndSingleTimeCommands(VkCommandBuffer cmdBuff)
+void CommandBuffer::EndSingleTimeCommands(VkCommandBuffer cmdBuff) const
 {
 	vkEndCommandBuffer(cmdBuff);
 
@@ -88,9 +86,9 @@ void CommandBuffers::EndSingleTimeCommands(VkCommandBuffer cmdBuff)
 	submitInfo.pCommandBuffers    = &cmdBuff;
 
 	// we dont necessarily need a transfer queue, graphics queue can handle it
-	vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueSubmit(m_Device->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
 	// we can use a fence to wait; this can help to schedule multiple transfers simultaneously
-	vkQueueWaitIdle(m_GraphicsQueue);
+	vkQueueWaitIdle(m_Device->GetGraphicsQueue());
 
-	vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &cmdBuff);
+	vkFreeCommandBuffers(m_Device->GetDevice(), m_CommandPool, 1, &cmdBuff);
 }

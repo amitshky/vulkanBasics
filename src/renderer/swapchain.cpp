@@ -5,10 +5,9 @@
 #include <stdexcept>
 
 
-Swapchain::Swapchain(GLFWwindow* windowContext, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface)
+Swapchain::Swapchain(GLFWwindow* windowContext, const Device* device, VkSurfaceKHR windowSurface)
 	: m_WindowContext{windowContext},
 	  m_Device{device},
-	  m_PhysicalDevice{physicalDevice},
 	  m_WindowSurface{windowSurface}
 {
 	CreateSwapchain();
@@ -20,13 +19,13 @@ Swapchain::Swapchain(GLFWwindow* windowContext, VkDevice device, VkPhysicalDevic
 
 Swapchain::~Swapchain()
 {
-	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+	vkDestroyRenderPass(m_Device->GetDevice(), m_RenderPass, nullptr);
 	CleanupSwapchain();
 }
 
 void Swapchain::CreateSwapchain()
 {
-	SwapchainSupportDetails swapchainSupport = Device::QuerySwapchainSupport(m_PhysicalDevice, m_WindowSurface);
+	SwapchainSupportDetails swapchainSupport = Device::QuerySwapchainSupport(m_Device->GetPhysicalDevice(), m_WindowSurface);
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapchainSupport.formats);
 	VkPresentModeKHR   presentMode   = ChooseSwapPresentMode(swapchainSupport.presentModes);
@@ -51,7 +50,7 @@ void Swapchain::CreateSwapchain()
 	swapchainCreateInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // what kind of operation the images in the swap chain be used for
 
 	// handle swapchain images across multiple queue families
-	QueueFamilyIndices indices = Device::FindQueueFamilies(m_PhysicalDevice, m_WindowSurface);
+	QueueFamilyIndices indices = Device::FindQueueFamilies(m_Device->GetPhysicalDevice(), m_WindowSurface);
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 	if (indices.graphicsFamily != indices.presentFamily)
@@ -71,13 +70,13 @@ void Swapchain::CreateSwapchain()
 	swapchainCreateInfo.clipped        = VK_TRUE;
 	swapchainCreateInfo.oldSwapchain   = VK_NULL_HANDLE;                                  // if new swapchain is to be created, the old one should be referenced here
 
-	if (vkCreateSwapchainKHR(m_Device, &swapchainCreateInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
+	if (vkCreateSwapchainKHR(m_Device->GetDevice(), &swapchainCreateInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create Swapchain!");
 
 	// get swapchain images
-	vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(m_Device->GetDevice(), m_Swapchain, &imageCount, nullptr);
 	m_SwapchainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &imageCount, m_SwapchainImages.data());
+	vkGetSwapchainImagesKHR(m_Device->GetDevice(), m_Swapchain, &imageCount, m_SwapchainImages.data());
 
 	m_SwapchainImageFormat = surfaceFormat.format;
 	m_SwapchainExtent = extent;
@@ -88,7 +87,7 @@ void Swapchain::CreateImageViews()
 	m_SwapchainImageViews.resize(m_SwapchainImages.size());
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
-		m_SwapchainImageViews[i] = CreateImageView(m_Device, m_SwapchainImages[i], m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		m_SwapchainImageViews[i] = CreateImageView(m_Device->GetDevice(), m_SwapchainImages[i], m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void Swapchain::CreateRenderPass()
@@ -158,7 +157,7 @@ void Swapchain::CreateRenderPass()
 	renderPassCreateInfo.dependencyCount = 1;
 	renderPassCreateInfo.pDependencies   = &subpassDependency;
 
-	if (vkCreateRenderPass(m_Device, &renderPassCreateInfo, nullptr, &m_RenderPass) != VK_SUCCESS)
+	if (vkCreateRenderPass(m_Device->GetDevice(), &renderPassCreateInfo, nullptr, &m_RenderPass) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create render pass!");
 }
 
@@ -166,9 +165,9 @@ void Swapchain::CreateDepthResources()
 {
 	VkFormat depthFormat = FindDepthFormat();
 
-	CreateImage(m_Device, m_PhysicalDevice, m_SwapchainExtent.width, m_SwapchainExtent.height, depthFormat, 
+	CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_SwapchainExtent.width, m_SwapchainExtent.height, depthFormat, 
 		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
-	m_DepthImageView = CreateImageView(m_Device, m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	m_DepthImageView = CreateImageView(m_Device->GetDevice(), m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 	// we don't need to map or copy another image to it, because it is going to be cleared at the start of the render.
 }
 
@@ -192,24 +191,24 @@ void Swapchain::CreateFramebuffers()
 		framebufferCreateInfo.height          = m_SwapchainExtent.height;
 		framebufferCreateInfo.layers          = 1;
 
-		if (vkCreateFramebuffer(m_Device, &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]) != VK_SUCCESS)
+		if (vkCreateFramebuffer(m_Device->GetDevice(), &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create framebuffer!");
 	}
 }
 
 void Swapchain::CleanupSwapchain()
 {
-	vkDestroyImageView(m_Device, m_DepthImageView, nullptr);
-	vkDestroyImage(m_Device, m_DepthImage, nullptr);
-	vkFreeMemory(m_Device, m_DepthImageMemory, nullptr);
+	vkDestroyImageView(m_Device->GetDevice(), m_DepthImageView, nullptr);
+	vkDestroyImage(m_Device->GetDevice(), m_DepthImage, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_DepthImageMemory, nullptr);
 
 	for (auto framebuffer : m_SwapchainFramebuffers)
-		vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+		vkDestroyFramebuffer(m_Device->GetDevice(), framebuffer, nullptr);
 
 	for (const auto& imageView : m_SwapchainImageViews)
-		vkDestroyImageView(m_Device, imageView, nullptr);
+		vkDestroyImageView(m_Device->GetDevice(), imageView, nullptr);
 
-	vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
+	vkDestroySwapchainKHR(m_Device->GetDevice(), m_Swapchain, nullptr);
 }
 
 void Swapchain::RecreateSwapchain()
@@ -226,7 +225,7 @@ void Swapchain::RecreateSwapchain()
 		glfwWaitEvents();
 	}
 
-	vkDeviceWaitIdle(m_Device);
+	vkDeviceWaitIdle(m_Device->GetDevice());
 
 	CleanupSwapchain(); // cleanup previous swapchain objects
 
@@ -295,7 +294,7 @@ VkFormat Swapchain::FindSupportedFormat(const std::vector<VkFormat>& canditateFo
 	for (auto format : canditateFormats)
 	{
 		VkFormatProperties prop;
-		vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &prop);
+		vkGetPhysicalDeviceFormatProperties(m_Device->GetPhysicalDevice(), format, &prop);
 
 		if (tiling == VK_IMAGE_TILING_LINEAR && (prop.linearTilingFeatures & features) == features)
 			return format;
@@ -316,7 +315,8 @@ VkFormat Swapchain::FindDepthFormat()
 
 
 // static functions
-void Swapchain::CreateImage(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
+// TODO: move this to an image class or something
+void Swapchain::CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
 	VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
 	VkImageCreateInfo imgCreateInfo{};
@@ -335,24 +335,24 @@ void Swapchain::CreateImage(VkDevice device, VkPhysicalDevice physicalDevice, ui
 	imgCreateInfo.samples       = VK_SAMPLE_COUNT_1_BIT; // for multisampling
 	imgCreateInfo.flags         = 0; // for sparse images
 
-	if (vkCreateImage(device, &imgCreateInfo, nullptr, &image) != VK_SUCCESS)
+	if (vkCreateImage(deviceVk, &imgCreateInfo, nullptr, &image) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create texture image object!");
 
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(device, image, &memRequirements);
+	vkGetImageMemoryRequirements(deviceVk, image, &memRequirements);
 
 	VkMemoryAllocateInfo memAllocInfo{};
 	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memAllocInfo.allocationSize = memRequirements.size;
 	memAllocInfo.memoryTypeIndex = FindMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
 
-	if (vkAllocateMemory(device, &memAllocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+	if (vkAllocateMemory(deviceVk, &memAllocInfo, nullptr, &imageMemory) != VK_SUCCESS)
 		throw std::runtime_error("Failed to allocate image memory!");
 
-	vkBindImageMemory(device, image, imageMemory, 0);
+	vkBindImageMemory(deviceVk, image, imageMemory, 0);
 }
 
-VkImageView Swapchain::CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+VkImageView Swapchain::CreateImageView(VkDevice deviceVk, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 {
 	VkImageViewCreateInfo imgViewCreateInfo{};
 	imgViewCreateInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -366,12 +366,13 @@ VkImageView Swapchain::CreateImageView(VkDevice device, VkImage image, VkFormat 
 	imgViewCreateInfo.subresourceRange.layerCount     = 1;
 
 	VkImageView imageView;
-	if (vkCreateImageView(device, &imgViewCreateInfo, nullptr, &imageView) != VK_SUCCESS)
+	if (vkCreateImageView(deviceVk, &imgViewCreateInfo, nullptr, &imageView) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create image view!");
 
 	return imageView;
 }
 
+// TODO: move this to buffer class
 uint32_t Swapchain::FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;

@@ -21,18 +21,14 @@
 #include "renderer/device.h"
 #include "renderer/swapchain.h"
 #include "renderer/pipeline.h"
-#include "renderer/commandBuffers.h"
+#include "renderer/texture.h"
+
+#include "renderer/buffer/commandBuffer.h"
+#include "renderer/buffer/vertexBuffer.h"
+#include "renderer/buffer/indexBuffer.h"
+#include "renderer/buffer/uniformBuffer.h"
+
 #include "renderer/camera.h"
-
-
-struct UniformBufferObject 
-{
-	// explicitly speicify alignments
-	// because vulkan expects structs to be in a specific alignment with the structs in the shaders
-	alignas(16) glm::mat4 model;
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
-};
 
 
 class Application
@@ -58,25 +54,8 @@ private:
 
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
 
-	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-	void CreateVertexBuffer();
-	void CreateIndexBuffer();
-
-	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
-	void CreateUniformBuffers();
-	void UpdateUniformBuffer(uint32_t currentFrameIdx);
-	void CreateDescriptorPool();
-	void CreateDescriptorSets();
-
 	void ProcessInput();
 	static void OnMouseMove(GLFWwindow* window, double xpos, double ypos);
-
-	void CreateTextureImage();
-	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	void CreateTextureImageView();
-	void CreateTextureSampler();
 
 private:
 	const VulkanConfig* m_Config;
@@ -89,17 +68,14 @@ private:
 	std::unique_ptr<Swapchain> m_Swapchain;
 	std::unique_ptr<Pipeline> m_GraphicsPipeline;
 
-	std::unique_ptr<CommandBuffers> m_CommandBuffers;
+	std::unique_ptr<CommandBuffer> m_CommandBuffers;
+	std::unique_ptr<VertexBuffer> m_VertexBuffer;
+	std::unique_ptr<IndexBuffer> m_IndexBuffer;
+
+	std::unique_ptr<Texture> m_Texture;
+	std::unique_ptr<UniformBuffer> m_UniformBuffers;
 	
 	std::unique_ptr<Camera> m_Camera;
-
-	// uniform buffer descriptor layout
-	std::vector<VkBuffer> m_UniformBuffers;
-	std::vector<VkDeviceMemory> m_UniformBuffersMemory;
-	std::vector<void*> m_UniformBuffersMapped;
-	// descriptor pool
-	VkDescriptorPool m_DescriptorPool;
-	std::vector<VkDescriptorSet> m_DescriptorSets;
 
 	// synchronization objects
 	// semaphores to sync gpu operations and fence to sync cpu operation with the gpu operation
@@ -113,18 +89,7 @@ private:
 	// check for resize
 	bool m_FramebufferResized = false;
 	
-	VkBuffer m_VertexBuffer;
-	VkDeviceMemory m_VertexBufferMemory;
-	VkBuffer m_IndexBuffer;
-	VkDeviceMemory m_IndexBufferMemory;
-
 	// for delta time
 	float m_LastFrameTime = 0.0f;
 	float m_DeltaTime     = 0.0f;
-
-	// textures
-	VkImage m_TextureImage;
-	VkDeviceMemory m_TextureImageMemory;
-	VkImageView m_TextureImageView;
-	VkSampler m_TextureSampler;
 };

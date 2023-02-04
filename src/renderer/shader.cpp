@@ -3,10 +3,10 @@
 #include <fstream>
 
 
-Shader::Shader(const std::string& path, ShaderType type, VkDevice device)
+Shader::Shader(const std::string& path, ShaderType type, VkDevice deviceVk)
 	: m_Path{path}, 
 	  m_Type{type},
-	  m_Device{device},
+	  m_DeviceVk{deviceVk},
 	  m_ShaderCode{},
 	  m_ShaderModule{VK_NULL_HANDLE},
 	  m_ShaderStage{} // has to be default initialized to initialize all its fields
@@ -18,7 +18,7 @@ Shader::Shader(const std::string& path, ShaderType type, VkDevice device)
 
 Shader::~Shader()
 {
-	vkDestroyShaderModule(m_Device, m_ShaderModule, nullptr);
+	vkDestroyShaderModule(m_DeviceVk, m_ShaderModule, nullptr);
 }
 
 void Shader::LoadShader()
@@ -43,7 +43,7 @@ void Shader::CreateShaderModule()
 	// code is in char but shaderModule expects it to be in uint32_t
 	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(m_ShaderCode.data());
 
-	if (vkCreateShaderModule(m_Device, &shaderModuleCreateInfo, nullptr, &m_ShaderModule) != VK_SUCCESS)
+	if (vkCreateShaderModule(m_DeviceVk, &shaderModuleCreateInfo, nullptr, &m_ShaderModule) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create shader module!");
 }
 

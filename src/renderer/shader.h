@@ -26,7 +26,7 @@ private:
 private:
 	std::string m_Path;
 	ShaderType m_Type;
-	VkDevice m_Device;
+	VkDevice m_DeviceVk;
 
 	std::vector<char> m_ShaderCode;
 	
