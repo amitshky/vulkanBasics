@@ -19,7 +19,7 @@ public:
 
 private:
 	void CreateGraphicsPipeline();
-	void CreateDescriptorSetLayout(); // TODO: move this to buffers
+	void CreateDescriptorSetLayout(); // TODO: move this to Uniform buffers or descriptor class
 
 private:
 	VkDevice m_DeviceVk;

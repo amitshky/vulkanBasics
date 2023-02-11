@@ -10,8 +10,6 @@
 #include <cmath>
 
 
-// TODO: pass objects like device (not VkDevice) and stuff not just specifically wht is needed like physicaldevice
-
 // vertex data
 std::vector<Vertex> vertices{
 	{ { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 0; position: top-left;     color: red
@@ -162,6 +160,7 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	// TODO: think on where bind functions should go (like should they be in their respective classes such as vertexbuffer or somewhrer outside the class)
+	// TODO: maybe create something similar to a vertex array where you can define the vertex buffers and index buffers and bind them when needed
 
 	// bind the vertex buffer
 	VkBuffer vertexBuffers[] = { m_VertexBuffer->GetVertexBuffer() };
@@ -182,6 +181,7 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 		throw std::runtime_error("Failed to record command buffer!");
 }
 
+// TODO: make a SyncObjects class
 void Application::CreateSyncObjects()
 {
 	m_ImageAvailableSemaphores.resize(m_Config->MAX_FRAMES_IN_FLIGHT);
@@ -235,6 +235,7 @@ void Application::DrawFrame()
 
 	m_UniformBuffers->Update(m_CurrentFrameIdx, m_Camera.get());
 	
+	// TODO: abstract queue submit (prolly in Device or Queue class)
 	// submit the command buffer
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
