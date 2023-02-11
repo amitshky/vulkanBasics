@@ -5,6 +5,7 @@
 #include <array>
 
 #include "renderer/swapchain.h"
+#include "utils/bufferUtils.h"
 
 
 UniformBuffer::UniformBuffer(const int maxFramesInFlight, const Device* device, const Pipeline* graphicsPipeline, const Texture* texture)
@@ -39,7 +40,7 @@ void UniformBuffer::CreateUniformBuffers()
 
 	for (size_t i = 0; i < m_MaxFramesInFlight; ++i)
 	{
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+		utils::buff::CreateBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffers[i], m_UniformBuffersMemory[i]);
 
 		//                    // actual buffer in GPU                      // buffer mapped to the CPU
@@ -135,33 +136,4 @@ void UniformBuffer::Update(uint32_t currentFrameIdx, const Camera* camera)
 
 	// copy the data from ubo to the uniform buffer (in GPU)
 	memcpy(m_UniformBuffersMapped[currentFrameIdx], &ubo, sizeof(ubo));
-}
-
-void UniformBuffer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
-{
-	VkBufferCreateInfo bufferCreateInfo{};
-	bufferCreateInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.size        = size;
-	bufferCreateInfo.usage       = usage;
-	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // buffers can be owned by a specific queue family or be shared between multiple at the same time
-
-	if (vkCreateBuffer(m_Device->GetDevice(), &bufferCreateInfo, nullptr, &buffer) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create vertex buffer!");
-
-	// assign memory to the buffer
-	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(m_Device->GetDevice(), buffer, &memRequirements);
-
-	// memory allocation
-	VkMemoryAllocateInfo memAllocInfo{};
-	memAllocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	memAllocInfo.allocationSize  = memRequirements.size;
-	memAllocInfo.memoryTypeIndex = Swapchain::FindMemoryType(m_Device->GetPhysicalDevice(), memRequirements.memoryTypeBits, properties);
-
-	// we are not supposed to call vkAllocateMemory() for every individual buffer, because we have a limited maxMemoryAllocationCount
-	// instead we can allocate a large memory and use offset to split the memory
-	if (vkAllocateMemory(m_Device->GetDevice(), &memAllocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
-		throw std::runtime_error("Failed to allocate vertex buffer memory!");
-	
-	vkBindBufferMemory(m_Device->GetDevice(), buffer, bufferMemory, 0);
 }

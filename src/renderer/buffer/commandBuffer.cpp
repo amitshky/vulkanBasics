@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <array>
 
+#include "utils/utils.h"
+
 
 CommandBuffer::CommandBuffer(const int maxFramesInFlight, VkSurfaceKHR windowSurface, const Device* device)
 	: m_MaxFramesInFlight{maxFramesInFlight},
@@ -21,7 +23,7 @@ CommandBuffer::~CommandBuffer()
 
 void CommandBuffer::CreateCommandPool()
 {
-	QueueFamilyIndices queueFamilyIndices = Device::FindQueueFamilies(m_Device->GetPhysicalDevice(), m_WindowSurface);
+	QueueFamilyIndices queueFamilyIndices = utils::FindQueueFamilies(m_Device->GetPhysicalDevice(), m_WindowSurface);
 
 	VkCommandPoolCreateInfo commandPoolCreateInfo{};
 	commandPoolCreateInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -50,45 +52,4 @@ void CommandBuffer::CreateCommandBuffers()
 void CommandBuffer::ResetCommandBuffer(int32_t index)
 {
 	vkResetCommandBuffer(m_CommandBuffers[index], 0);
-}
-
-VkCommandBuffer CommandBuffer::BeginSingleTimeCommands() const
-{
-	// transfer operations are also executed using command buffers
-	// so we allocate a temporary command buffer
-	VkCommandBufferAllocateInfo cmdBuffAllocInfo{};
-	cmdBuffAllocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cmdBuffAllocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cmdBuffAllocInfo.commandPool        = m_CommandPool;
-	cmdBuffAllocInfo.commandBufferCount = 1;
-
-	VkCommandBuffer cmdBuff;
-	vkAllocateCommandBuffers(m_Device->GetDevice(), &cmdBuffAllocInfo, &cmdBuff);
-
-	// immediately start recording the command buffer
-	VkCommandBufferBeginInfo cmdBuffBegin{};
-	cmdBuffBegin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cmdBuffBegin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(cmdBuff, &cmdBuffBegin);
-
-	return cmdBuff;
-}
-
-void CommandBuffer::EndSingleTimeCommands(VkCommandBuffer cmdBuff) const
-{
-	vkEndCommandBuffer(cmdBuff);
-
-	// submit the queue
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers    = &cmdBuff;
-
-	// we dont necessarily need a transfer queue, graphics queue can handle it
-	vkQueueSubmit(m_Device->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-	// we can use a fence to wait; this can help to schedule multiple transfers simultaneously
-	vkQueueWaitIdle(m_Device->GetGraphicsQueue());
-
-	vkFreeCommandBuffers(m_Device->GetDevice(), m_CommandPool, 1, &cmdBuff);
 }

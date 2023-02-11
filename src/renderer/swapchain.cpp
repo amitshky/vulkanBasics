@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "utils/utils.h"
+#include "utils/imageUtils.h"
+
 
 Swapchain::Swapchain(GLFWwindow* windowContext, const Device* device, VkSurfaceKHR windowSurface)
 	: m_WindowContext{windowContext},
@@ -25,7 +28,7 @@ Swapchain::~Swapchain()
 
 void Swapchain::CreateSwapchain()
 {
-	SwapchainSupportDetails swapchainSupport = Device::QuerySwapchainSupport(m_Device->GetPhysicalDevice(), m_WindowSurface);
+	SwapchainSupportDetails swapchainSupport = utils::QuerySwapchainSupport(m_Device->GetPhysicalDevice(), m_WindowSurface);
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapchainSupport.formats);
 	VkPresentModeKHR   presentMode   = ChooseSwapPresentMode(swapchainSupport.presentModes);
@@ -50,7 +53,7 @@ void Swapchain::CreateSwapchain()
 	swapchainCreateInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // what kind of operation the images in the swap chain be used for
 
 	// handle swapchain images across multiple queue families
-	QueueFamilyIndices indices = Device::FindQueueFamilies(m_Device->GetPhysicalDevice(), m_WindowSurface);
+	QueueFamilyIndices indices = utils::FindQueueFamilies(m_Device->GetPhysicalDevice(), m_WindowSurface);
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 	if (indices.graphicsFamily != indices.presentFamily)
@@ -87,7 +90,7 @@ void Swapchain::CreateImageViews()
 	m_SwapchainImageViews.resize(m_SwapchainImages.size());
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
-		m_SwapchainImageViews[i] = CreateImageView(m_Device->GetDevice(), m_SwapchainImages[i], m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		m_SwapchainImageViews[i] = utils::img::CreateImageView(m_Device->GetDevice(), m_SwapchainImages[i], m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void Swapchain::CreateRenderPass()
@@ -165,9 +168,9 @@ void Swapchain::CreateDepthResources()
 {
 	VkFormat depthFormat = FindDepthFormat();
 
-	CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_SwapchainExtent.width, m_SwapchainExtent.height, depthFormat, 
+	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_SwapchainExtent.width, m_SwapchainExtent.height, depthFormat, 
 		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
-	m_DepthImageView = CreateImageView(m_Device->GetDevice(), m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	m_DepthImageView = utils::img::CreateImageView(m_Device->GetDevice(), m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 	// we don't need to map or copy another image to it, because it is going to be cleared at the start of the render.
 }
 
@@ -311,81 +314,6 @@ VkFormat Swapchain::FindDepthFormat()
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 	);
-}
-
-
-// static functions
-// TODO: move this to an image class or something
-void Swapchain::CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
-	VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
-{
-	VkImageCreateInfo imgCreateInfo{};
-	imgCreateInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imgCreateInfo.imageType     = VK_IMAGE_TYPE_2D;
-	imgCreateInfo.extent.width  = width;
-	imgCreateInfo.extent.height = height;
-	imgCreateInfo.extent.depth  = 1;
-	imgCreateInfo.mipLevels     = 1;
-	imgCreateInfo.arrayLayers   = 1;
-	imgCreateInfo.format        = format;
-	imgCreateInfo.tiling        = tiling; // Texels are laid out in an implementation defined order for optimal access
-	imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // not needed because we copy the texel data from the buffer
-	imgCreateInfo.usage         = usage; // `VK_IMAGE_USAGE_SAMPLED_BIT` because we also want the image to be accessed from the shader
-	imgCreateInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
-	imgCreateInfo.samples       = VK_SAMPLE_COUNT_1_BIT; // for multisampling
-	imgCreateInfo.flags         = 0; // for sparse images
-
-	if (vkCreateImage(deviceVk, &imgCreateInfo, nullptr, &image) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create texture image object!");
-
-	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(deviceVk, image, &memRequirements);
-
-	VkMemoryAllocateInfo memAllocInfo{};
-	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	memAllocInfo.allocationSize = memRequirements.size;
-	memAllocInfo.memoryTypeIndex = FindMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
-
-	if (vkAllocateMemory(deviceVk, &memAllocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-		throw std::runtime_error("Failed to allocate image memory!");
-
-	vkBindImageMemory(deviceVk, image, imageMemory, 0);
-}
-
-VkImageView Swapchain::CreateImageView(VkDevice deviceVk, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
-{
-	VkImageViewCreateInfo imgViewCreateInfo{};
-	imgViewCreateInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	imgViewCreateInfo.image    = image;
-	imgViewCreateInfo.format   = format;
-	imgViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	imgViewCreateInfo.subresourceRange.aspectMask     = aspectFlags;
-	imgViewCreateInfo.subresourceRange.baseMipLevel   = 0;
-	imgViewCreateInfo.subresourceRange.levelCount     = 1;
-	imgViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-	imgViewCreateInfo.subresourceRange.layerCount     = 1;
-
-	VkImageView imageView;
-	if (vkCreateImageView(deviceVk, &imgViewCreateInfo, nullptr, &imageView) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create image view!");
-
-	return imageView;
-}
-
-// TODO: move this to buffer class
-uint32_t Swapchain::FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
-{
-	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
-	for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
-	{
-		// typeFilter specifies a bit field of memory types
-		if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-			return i;
-	}
-
-	throw std::runtime_error("Failed to find suitable memory type!");
 }
 
 bool Swapchain::HasStencilComponent(VkFormat format)

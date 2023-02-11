@@ -15,9 +15,7 @@ public:
 
 	void ResetCommandBuffer(int32_t index);
 
-	VkCommandBuffer BeginSingleTimeCommands() const;
-	void EndSingleTimeCommands(VkCommandBuffer cmdBuff) const;
-
+	inline VkCommandPool GetCommandPool() const { return m_CommandPool; }
 	inline VkCommandBuffer& GetCommandBufferAtIndex(const uint32_t index) { return m_CommandBuffers[index]; }
 	inline VkCommandBuffer GetCommandBufferAtIndex(const uint32_t index) const { return m_CommandBuffers[index]; }
 

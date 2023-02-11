@@ -16,12 +16,6 @@ public:
 
 	void RecreateSwapchain();
 
-	// TODO: move these to utils or somewhere
-	static void CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
-		VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-	static VkImageView CreateImageView(VkDevice deviceVk, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-	static uint32_t FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
 	inline VkSwapchainKHR GetSwapchain() const { return m_Swapchain; }
 	inline VkFormat GetSwapchainFormat() const { return m_SwapchainImageFormat; }
 	inline VkExtent2D GetSwapchainExtent() const { return m_SwapchainExtent; }
@@ -69,11 +63,14 @@ private:
 	VkExtent2D m_SwapchainExtent;
 	std::vector<VkImageView> m_SwapchainImageViews;
 
+	// TODO: make a framebuffer class
 	VkRenderPass m_RenderPass;
 
+	// TODO: make a depth buffer class
 	VkImage m_DepthImage;
 	VkDeviceMemory m_DepthImageMemory;
 	VkImageView m_DepthImageView;
 
+	// TODO: make a framebuffer class
 	std::vector<VkFramebuffer> m_SwapchainFramebuffers;
 };

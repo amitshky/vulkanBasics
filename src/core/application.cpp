@@ -161,7 +161,7 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	scissor.extent = m_Swapchain->GetSwapchainExtent();
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	// TODO: think on where bind functions should go
+	// TODO: think on where bind functions should go (like should they be in their respective classes such as vertexbuffer or somewhrer outside the class)
 
 	// bind the vertex buffer
 	VkBuffer vertexBuffers[] = { m_VertexBuffer->GetVertexBuffer() };
@@ -223,9 +223,7 @@ void Application::DrawFrame()
 		return; // we cannot simply return here, because the queue is never submitted and thus the fences are never signaled , causing a deadlock; to solve this we delay resetting the fences until after we check the swapchain
 	}
 	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) // if suboptimal, the swapchain can still be used to present but the surface properties are no longer the same; this is considered as success here
-	{
 		throw std::runtime_error("Failed to acquire swapchain image!");
-	}
 
 	// resetting the fence has been set after the result has been checked to avoid a deadlock
 	// reset the fence to unsignaled state

@@ -6,24 +6,6 @@
 #include "core/vulkanConfig.h"
 
 
-struct QueueFamilyIndices
-{
-	// std::optional contains no value until you assign something to it
-	// we can check if it contains a value by calling has_value()
-	std::optional<uint32_t> graphicsFamily;
-	std::optional<uint32_t> presentFamily;
-
-	inline bool IsComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
-};
-
-struct SwapchainSupportDetails
-{
-	VkSurfaceCapabilitiesKHR capabilities;
-	std::vector<VkSurfaceFormatKHR> formats;
-	std::vector<VkPresentModeKHR> presentModes;
-};
-
-
 class Device
 {
 public:
@@ -37,11 +19,6 @@ public:
 	inline VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
 	inline VkQueue GetPresentQueue() const { return m_GraphicsQueue; }
 	
-	// TODO: move this to swapchain class
-	static SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface);
-	// TODO: maybe make a separate Queue class
-	static QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface);
-
 private:
 	void PickPhysicalDevice();
 	void CreateLogicalDevice();

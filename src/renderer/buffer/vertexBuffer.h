@@ -60,10 +60,6 @@ public:
 private:
 	void CreateVertexBuffer();
 
-	// TODO: create buffer and copy buffer have been defined in multiple places; refactor it
-	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
 private:
 	const Device* m_Device;
 	const CommandBuffer* m_CommandBuffers; 

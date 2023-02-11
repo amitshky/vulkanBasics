@@ -38,8 +38,6 @@ private:
 	void CreateDescriptorPool();
 	void CreateDescriptorSets();
 
-	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-
 private:
 	const int m_MaxFramesInFlight;
 	const Device* m_Device;

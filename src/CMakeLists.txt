@@ -19,4 +19,9 @@ add_executable(
 	renderer/buffer/uniformBuffer.cpp
 	
 	renderer/camera.cpp
+
+	utils/utils.cpp
+	utils/commandBufferUtils.cpp
+	utils/bufferUtils.cpp
+	utils/imageUtils.cpp
 )
