@@ -14,8 +14,8 @@ Camera::Camera(float aspectRatio)
 	  m_Yaw{-90.0f}, m_Pitch{0.0f}, 
 	  m_LastX{0.0f}, m_LastY{0.0f},
 	  m_FOVy{glm::radians(45.0f)},
-	  m_ZNear{1.0f},
-	  m_ZFar{10.0f},
+	  m_ZNear{0.1f},
+	  m_ZFar{50.0f},
 	  m_ViewMatrix{},
 	  m_ProjectionMatrix{}
 {
@@ -51,6 +51,19 @@ void Camera::OnUpdate(GLFWwindow* window, float deltaTime, uint32_t width, uint3
 		const glm::vec3 rightVec = glm::cross(m_CameraFront, m_CameraUp);
 		const glm::vec3 upVec    = glm::cross(rightVec, m_CameraFront);
 		m_CameraPos += cameraSpeed * glm::normalize(upVec);
+	}
+
+	// reset camera
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+	{
+		m_CameraPos = glm::vec3(0.0f, 0.0f, 4.0f);
+		m_CameraFront = glm::vec3(0.0f, 0.0f, -1.0f); 
+		m_CameraUp = glm::vec3(0.0f, 1.0f, 0.0f); 
+		m_Target = glm::vec3(0.0f, 0.0f, 0.0f);
+		m_Yaw = -90.0f;
+		m_Pitch = 0.0f; 
+		m_LastX = 0.0f;
+		m_LastY = 0.0f;
 	}
 }
 

@@ -61,7 +61,7 @@ void Pipeline::CreateGraphicsPipeline()
 	rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;                // if true, the geometry never passes through rasterizer stage
 	rasterizationStateCreateInfo.polygonMode             = VK_POLYGON_MODE_FILL;    // how fragments are generated
 	rasterizationStateCreateInfo.lineWidth               = 1.0f;                    // thickness of lines
-	rasterizationStateCreateInfo.cullMode                = VK_CULL_MODE_NONE;   // type of face culling; cull the back face
+	rasterizationStateCreateInfo.cullMode                = VK_CULL_MODE_BACK_BIT;   // type of face culling; cull the back face
 	// we specify counter clockwise because in the projection matrix we flipped the y-coord
 	rasterizationStateCreateInfo.frontFace               = VK_FRONT_FACE_CLOCKWISE; // vertex order for faces to be considered front-face
 	// the depth value can be altered by adding a constant value based on fragment slope

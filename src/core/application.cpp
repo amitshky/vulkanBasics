@@ -12,21 +12,52 @@
 
 // vertex data
 std::vector<Vertex> vertices{
-	{ { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 0; position: top-left;     color: red
-	{ {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 1; position: top-right;    color: green
-	{ {  0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 2; position: bottom-right; color: blue
-	{ { -0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 3; position: bottom-left;  color: magenta
+	// the colors don't matter at the moment
+	// front
+	{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 0; position: top-left;     color: red
+	{ {  0.5f, -0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 1; position: top-right;    color: green
+	{ {  0.5f,  0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 2; position: bottom-right; color: blue
+	{ { -0.5f,  0.5f, 0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 3; position: bottom-left;  color: magenta
 
-	{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 4; position: top-left;     color: red
+	// right
+	{ {  0.5f, -0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 4; position: top-left;    color: green
 	{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 5; position: top-right;    color: green
 	{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 6; position: bottom-right; color: blue
-	{ { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }  // index: 7; position: bottom-left;  color: magenta
+	{ {  0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 7; position: bottom-left; color: blue
+	
+	// back
+	{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 8; position: top-left;    color: green
+	{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 8; position: top-right;     color: red
+	{ { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 10; position: bottom-right;  color: magenta
+	{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 11; position: bottom-left; color: blue
+
+	// left
+	{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 12; position: top-left;     color: red
+	{ { -0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 13; position: top-right;     color: red
+	{ { -0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 14; position: bottom-right;  color: magenta
+	{ { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 15; position: bottom-left;  color: magenta
+
+	// top
+	{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 16; position: top-left;     color: red
+	{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 17; position: top-right;    color: green
+	{ {  0.5f, -0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f } }, // index: 18; position: bottom-right;    color: green
+	{ { -0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f } }, // index: 19; position: bottom-left;     color: red
+
+	// bottom
+	{ { -0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } }, // index: 20; position: top-left;  color: magenta
+	{ {  0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f } }, // index: 21; position: top-right; color: blue
+	{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 22; position: bottom-right; color: blue
+	{ { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }  // index: 23; position: bottom-left;  color: magenta
 };
 
 // indices for index buffer
 std::vector<uint16_t> indices = { 
-	0, 1, 2, 2, 3, 0,
-	4, 5, 6, 6, 7, 4
+	0, 1, 2, 2, 3, 0, // front
+	4, 5, 6, 6, 7, 4, // right
+	8, 9, 10, 10, 11, 8, // back
+	12, 13, 14, 14, 15, 12, // left
+	16, 17, 18, 18, 19, 16, // top
+	20, 21, 22, 22, 23, 20  // bottom
 };
 
 const VulkanConfig config{
@@ -171,6 +202,7 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	// descriptor sets are not unique to graphics or compute pipeline so we need to specify it
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->GetLayout(), 0, 1, &m_UniformBuffers->GetDescriptorSetAtIndex(m_CurrentFrameIdx), 0, nullptr);
 
+	//vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 	// the draw command changes if index buffers are used
 	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
