@@ -31,6 +31,7 @@ OR (using bat scripts from `scripts` folder)
 ## Usage
 * WASD to move the camera forward, left, back, and right respectively.
 * E and Q to move the camera up and down.
+* R to reset the camera
 * Esc to close the window
 * Left click and drag the mouse to move the view of the camera (in first person)
 

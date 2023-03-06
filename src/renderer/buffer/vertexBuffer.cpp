@@ -28,7 +28,7 @@ void VertexBuffer::CreateVertexBuffer()
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 	utils::buff::CreateBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // source memory during transfer
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory); // staging buffer (in the CPU); temporary buffer
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory); // staging buffer (in the CPU accessible memory); temporary buffer
 
 	// copy the vertex data to the buffer
 	void* data;
@@ -37,9 +37,9 @@ void VertexBuffer::CreateVertexBuffer()
 	vkUnmapMemory(m_Device->GetDevice(), stagingBufferMemory);
 
 	utils::buff::CreateBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, // destination memory during transfer
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_BufferMemory); // the actual buffer (located in the device memory)
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_BufferMemory); // the actual buffer (in the device's local memory)
 
-	utils::buff::CopyBuffer(m_Device->GetDevice(), m_Device->GetGraphicsQueue(), m_CommandBuffers->GetCommandPool(), 
+	utils::buff::CopyBuffer(m_Device->GetDevice(), m_Device->GetGraphicsQueue(), m_CommandBuffers->GetCommandPool(),
 		stagingBuffer, m_VertexBuffer, bufferSize);
 
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);

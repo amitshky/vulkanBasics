@@ -11,8 +11,8 @@ namespace utils
 namespace buff
 {
 
-void CreateBuffer(VkDevice deviceVk, VkPhysicalDevice physicalDevice, 
-	VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, 
+void CreateBuffer(VkDevice deviceVk, VkPhysicalDevice physicalDevice,
+	VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
 	VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
 	VkBufferCreateInfo bufferCreateInfo{};
@@ -36,13 +36,14 @@ void CreateBuffer(VkDevice deviceVk, VkPhysicalDevice physicalDevice,
 
 	// we are not supposed to call vkAllocateMemory() for every individual buffer, because we have a limited maxMemoryAllocationCount
 	// instead we can allocate a large memory and use offset to split the memory
+	// TODO: create a custom allocator
 	if (vkAllocateMemory(deviceVk, &memAllocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
 		throw std::runtime_error("Failed to allocate vertex buffer memory!");
-	
+
 	vkBindBufferMemory(deviceVk, buffer, bufferMemory, 0);
 }
 
-void CopyBuffer(VkDevice deviceVk, VkQueue graphicsQueue, VkCommandPool commandPool, 
+void CopyBuffer(VkDevice deviceVk, VkQueue graphicsQueue, VkCommandPool commandPool,
 	VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
 	VkCommandBuffer cmdBuff = cmd::BeginSingleTimeCommands(deviceVk, commandPool);
@@ -53,11 +54,11 @@ void CopyBuffer(VkDevice deviceVk, VkQueue graphicsQueue, VkCommandPool commandP
 	copyRegion.size      = size;
 	// transfer the contents of the buffers
 	vkCmdCopyBuffer(cmdBuff, srcBuffer, dstBuffer, 1, &copyRegion);
-	
+
 	cmd::EndSingleTimeCommands(deviceVk, graphicsQueue, commandPool, cmdBuff);
 }
 
-void CopyBufferToImage(VkDevice deviceVk, VkQueue graphicsQueue, VkCommandPool commandPool, 
+void CopyBufferToImage(VkDevice deviceVk, VkQueue graphicsQueue, VkCommandPool commandPool,
 	VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
 	VkCommandBuffer cmdBuff = cmd::BeginSingleTimeCommands(deviceVk, commandPool);
@@ -67,18 +68,18 @@ void CopyBufferToImage(VkDevice deviceVk, VkQueue graphicsQueue, VkCommandPool c
 	region.bufferOffset      = 0;
 	region.bufferImageHeight = 0;
 	region.bufferRowLength   = 0;
-	
+
 	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.imageSubresource.mipLevel = 0;
 	region.imageSubresource.baseArrayLayer = 0;
 	region.imageSubresource.layerCount = 1;
 
-	// part of the image to copy to	
+	// part of the image to copy to
 	region.imageOffset = { 0, 0, 0 };
 	region.imageExtent = { width, height, 1 };
 
 	vkCmdCopyBufferToImage(cmdBuff, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-	
+
 	cmd::EndSingleTimeCommands(deviceVk, graphicsQueue, commandPool, cmdBuff);
 }
 
