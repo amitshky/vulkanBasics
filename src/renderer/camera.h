@@ -20,6 +20,8 @@ public:
 	void Orbit(GLFWwindow* window, double xpos, double ypos);
 
 private:
+	bool m_FirstMouseMove = true;
+
 	glm::vec3 m_CameraPos;
 	glm::vec3 m_CameraFront;
 	glm::vec3 m_CameraUp;

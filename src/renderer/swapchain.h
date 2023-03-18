@@ -37,7 +37,7 @@ public:
 
 private:
 	void CreateSwapchain();
-	void CreateImageViews();
+	void CreateSwapchainImageViews();
 	void CreateRenderPass();
 	void CreateDepthResources();
 	void CreateFramebuffers();

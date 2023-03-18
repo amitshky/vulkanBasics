@@ -63,7 +63,7 @@
 	* basic surface capabilities (min/max number of images in swap chain)
 	* surface formats (pixel format and color space)
 	* available presentation modes
-* We need to find the right settings for swap chain, settings such as 
+* We need to find the right settings for swap chain, settings such as
 	* Surface format (color depth)
 	* Presentation mode (conditions for "swapping" images to the screen)
 	* Swap extent (resolution of images in swap chain)
@@ -98,12 +98,12 @@
 * shader code in vulkan has to be in bytecode
 	* SPIR-V
 	* this makes turning shader code to native code less complex
-		* with GLSL, the implementation can vary between GPU vendors 
+		* with GLSL, the implementation can vary between GPU vendors
 * **compiler:** `glslc.exe`
 	* same parameter format as gcc and clang
 * **Coordinate system**
 	* notice that the Y coordinates are flipped; -1 to 1 from top to bottom
-	
+
 	<img src="img/coords.png" width=450>
 * you can also compile shaders from code; [libshaderc](https://github.com/google/shaderc)
 * Shader modules are just a wrapper around the shader bytecode
@@ -184,7 +184,7 @@
 * commands (drawing, memory transfer) in vulkan are not executed directly using function calls, instead, the commands have to be recorded in command buffers
 	* vulkan can more efficiently process the commands since all of them are available together
 * **Command Pools:**
-	* needs to be created before creating command buffers 
+	* needs to be created before creating command buffers
 	* manage memory that is used to store the buffers
 	* command pools can only allocate command buffers that are submitted by a single type of queue
 * command buffers are executed by submitting them on one of the device queues
@@ -208,9 +208,9 @@
 * if the host (cpu) needs to know when the gpu has finished something, a fence is used
 * we use semaphores for swapchain and use fences when waiting for previous frame to finish (so that we dont draw more than on frame at a time)
 
-* Currently we have a single subpass, but there are 2 built-in subpasses that control the image layout transitions (at the start and at the end of the render pass). 
+* Currently we have a single subpass, but there are 2 built-in subpasses that control the image layout transitions (at the start and at the end of the render pass).
 * The first subpass occurs at the start of the pipeline, but we dont have the image at this point
-* there are 2 ways to deal with this, wait on the `VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT` stage, or `VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT` 
+* there are 2 ways to deal with this, wait on the `VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT` stage, or `VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT`
 
 
 ## Frames in flight
@@ -303,4 +303,4 @@
 	* so we use `GLM_FORCE_DEPTH_ZERO_TO_ONE`
 * similar to the color attachment, depth attachment is also based on image. But for depth attachment, the swapchain will not automatically create depth images.
 * because only one draw operation is running at once, we only need one depth image.
-* a subpass can only use a single depth + stencil buffer 
+* a subpass can only use a single depth + stencil buffer

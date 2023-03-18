@@ -24,7 +24,7 @@ std::vector<Vertex> vertices{
 	{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 5; position: top-right;    color: green
 	{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 6; position: bottom-right; color: blue
 	{ {  0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 7; position: bottom-left; color: blue
-	
+
 	// back
 	{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 8; position: top-left;    color: green
 	{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 8; position: top-right;     color: red
@@ -51,7 +51,7 @@ std::vector<Vertex> vertices{
 };
 
 // indices for index buffer
-std::vector<uint16_t> indices = { 
+std::vector<uint16_t> indices = {
 	0, 1, 2, 2, 3, 0, // front
 	4, 5, 6, 6, 7, 4, // right
 	8, 9, 10, 10, 11, 8, // back
@@ -77,9 +77,9 @@ const VulkanConfig config{
 
 
 Application::Application(const char* title, int32_t width, int32_t height)
-	: m_Config{&config}, 
-	  m_Window{std::make_unique<Window>(title, width, height)}, 
-	  m_VulkanContext{std::make_unique<VulkanContext>(title, m_Config)}, 
+	: m_Config{&config},
+	  m_Window{std::make_unique<Window>(title, width, height)},
+	  m_VulkanContext{std::make_unique<VulkanContext>(title, m_Config)},
 	  m_WindowSurface{std::make_unique<WindowSurface>(m_Window->GetWindowContext(), m_VulkanContext->GetInstance())},
 	  m_Device{std::make_unique<Device>(m_VulkanContext->GetInstance(), m_WindowSurface->GetSurface(), m_Config)},
 	  m_Swapchain{std::make_unique<Swapchain>(m_Window->GetWindowContext(), m_Device.get(), m_WindowSurface->GetSurface())},
@@ -111,7 +111,7 @@ void Application::Run()
 		m_DeltaTime     = currentFrameTime - m_LastFrameTime;
 		m_LastFrameTime = currentFrameTime;
 
-		//printf("\r%8.2f fps", 1 / m_DeltaTime);
+		printf("\r%8.2f fps", 1 / m_DeltaTime);
 
 		m_Camera->OnUpdate(m_Window->GetWindowContext(), m_DeltaTime, m_Swapchain->GetWidth(), m_Swapchain->GetHeight());
 		DrawFrame();
@@ -219,7 +219,7 @@ void Application::CreateSyncObjects()
 	m_ImageAvailableSemaphores.resize(m_Config->MAX_FRAMES_IN_FLIGHT);
 	m_RenderFinishedSemaphores.resize(m_Config->MAX_FRAMES_IN_FLIGHT);
 	m_InFlightFences.resize(m_Config->MAX_FRAMES_IN_FLIGHT);
-	
+
 	VkSemaphoreCreateInfo semaphoreCreateInfo{};
 	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -233,7 +233,7 @@ void Application::CreateSyncObjects()
 	for (size_t i = 0; i < m_Config->MAX_FRAMES_IN_FLIGHT; ++i)
 	{
 		if (vkCreateSemaphore(m_Device->GetDevice(), &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(m_Device->GetDevice(), &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS || 
+			vkCreateSemaphore(m_Device->GetDevice(), &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS ||
 			vkCreateFence(m_Device->GetDevice(), &fenceCreateInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create synchronization objects for a frame!");
 	}
@@ -266,7 +266,7 @@ void Application::DrawFrame()
 	RecordCommandBuffer(m_CommandBuffers->GetCommandBufferAtIndex(m_CurrentFrameIdx), nextImageIndex);
 
 	m_UniformBuffers->Update(m_CurrentFrameIdx, m_Camera.get());
-	
+
 	// TODO: abstract queue submit (prolly in Device or Queue class)
 	// submit the command buffer
 	VkSubmitInfo submitInfo{};

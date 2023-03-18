@@ -7,11 +7,11 @@
 
 
 Camera::Camera(float aspectRatio)
-	: m_CameraPos{glm::vec3(0.0f, 0.0f, 4.0f)}, 
-	  m_CameraFront{glm::vec3(0.0f, 0.0f, -1.0f)}, 
-	  m_CameraUp{glm::vec3(0.0f, 1.0f, 0.0f)}, 
+	: m_CameraPos{glm::vec3(0.0f, 0.0f, 4.0f)},
+	  m_CameraFront{glm::vec3(0.0f, 0.0f, -1.0f)},
+	  m_CameraUp{glm::vec3(0.0f, 1.0f, 0.0f)},
 	  m_Target{glm::vec3(0.0f, 0.0f, 0.0f)},
-	  m_Yaw{-90.0f}, m_Pitch{0.0f}, 
+	  m_Yaw{-90.0f}, m_Pitch{0.0f},
 	  m_LastX{0.0f}, m_LastY{0.0f},
 	  m_FOVy{glm::radians(45.0f)},
 	  m_ZNear{0.1f},
@@ -34,12 +34,12 @@ void Camera::OnUpdate(GLFWwindow* window, float deltaTime, uint32_t width, uint3
 		m_CameraPos += cameraSpeed * m_CameraFront;
 	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) // backward
 		m_CameraPos -= cameraSpeed * m_CameraFront;
-	
+
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) // left
 		m_CameraPos -= cameraSpeed * (glm::normalize(glm::cross(m_CameraFront, m_CameraUp)));
-	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) // right 
+	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) // right
 		m_CameraPos += cameraSpeed * (glm::normalize(glm::cross(m_CameraFront, m_CameraUp)));
-	
+
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) // up
 	{
 		const glm::vec3 rightVec = glm::cross(m_CameraFront, m_CameraUp);
@@ -56,12 +56,13 @@ void Camera::OnUpdate(GLFWwindow* window, float deltaTime, uint32_t width, uint3
 	// reset camera
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
 	{
+		m_FirstMouseMove = true;
 		m_CameraPos = glm::vec3(0.0f, 0.0f, 4.0f);
-		m_CameraFront = glm::vec3(0.0f, 0.0f, -1.0f); 
-		m_CameraUp = glm::vec3(0.0f, 1.0f, 0.0f); 
+		m_CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+		m_CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 		m_Target = glm::vec3(0.0f, 0.0f, 0.0f);
 		m_Yaw = -90.0f;
-		m_Pitch = 0.0f; 
+		m_Pitch = 0.0f;
 		m_LastX = 0.0f;
 		m_LastY = 0.0f;
 	}
@@ -69,21 +70,21 @@ void Camera::OnUpdate(GLFWwindow* window, float deltaTime, uint32_t width, uint3
 
 void Camera::OnMouseMove(GLFWwindow* window, double xpos, double ypos)
 {
-	static bool firstMouse = true;
+	// initial values: m_Yaw = -90.0f, m_Pitch = 0.0f
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) != GLFW_PRESS) // only move the camera on mouse button click
 	{
-		firstMouse = true;
+		m_FirstMouseMove = true;
 		return;
 	}
-	
-	if (firstMouse)
+
+	if (m_FirstMouseMove)
 	{
 		m_LastX = xpos;
 		m_LastY = ypos;
-		firstMouse = false;
+		m_FirstMouseMove = false;
 	}
 
-	const float sensitivity = 0.1f; 
+	const float sensitivity = 0.1f;
 	float xOffset = (xpos - m_LastX) * sensitivity;
 	float yOffset = (ypos - m_LastY) * sensitivity;
 
@@ -108,25 +109,24 @@ void Camera::OnMouseMove(GLFWwindow* window, double xpos, double ypos)
 	m_CameraFront = glm::normalize(direction);
 }
 
+// BUG: doesnt work for some reason
 void Camera::Orbit(GLFWwindow* window, double xpos, double ypos)
 {
 	// initial value: m_Yaw = 90.0f, m_Pitch = 90.0f
-	static bool firstMouse = true;
-
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) != GLFW_PRESS) // only move the camera on mouse button click
 	{
-		firstMouse = true;
+		m_FirstMouseMove = true;
 		return;
 	}
 
-	if (firstMouse)
+	if (m_FirstMouseMove)
 	{
 		m_LastX = xpos;
 		m_LastY = ypos;
-		firstMouse = false;
+		m_FirstMouseMove = false;
 	}
 
-	const float sensitivity = 0.5f; 
+	const float sensitivity = 0.5f;
 	float xOffset = (xpos - m_LastX) * sensitivity;
 	float yOffset = (ypos - m_LastY) * sensitivity;
 
@@ -145,8 +145,8 @@ void Camera::Orbit(GLFWwindow* window, double xpos, double ypos)
 		m_Yaw = 0.0f;
 
 
-	const float radius = std::sqrtf((m_Target.x - m_CameraPos.x) * (m_Target.x - m_CameraPos.x) + 
-									(m_Target.y - m_CameraPos.y) * (m_Target.y - m_CameraPos.y) + 
+	const float radius = std::sqrtf((m_Target.x - m_CameraPos.x) * (m_Target.x - m_CameraPos.x) +
+									(m_Target.y - m_CameraPos.y) * (m_Target.y - m_CameraPos.y) +
 									(m_Target.z - m_CameraPos.z) * (m_Target.z - m_CameraPos.z));
 	glm::vec3 position;
 	position.x = m_Target.x + radius * std::sinf(glm::radians(m_Pitch)) * std::cosf(glm::radians(m_Yaw));
