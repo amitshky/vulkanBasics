@@ -21,7 +21,7 @@ struct SwapchainSupportDetails
 	std::vector<VkPresentModeKHR> presentModes;
 };
 
-namespace utils 
+namespace utils
 {
 
 uint32_t FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);

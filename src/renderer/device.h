@@ -18,14 +18,17 @@ public:
 
 	inline VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
 	inline VkQueue GetPresentQueue() const { return m_GraphicsQueue; }
-	
+
+	inline VkSampleCountFlagBits GetMSAASamplesCount() const { return m_MsaaSamples; }
+
 private:
 	void PickPhysicalDevice();
 	void CreateLogicalDevice();
 
 	bool IsDeviceSuitable(VkPhysicalDevice physicalDevice);
-
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
+
+	VkSampleCountFlagBits GetMaxUsableSampleCount();
 
 private:
 	VkInstance m_VulkanInstance;
@@ -37,4 +40,6 @@ private:
 
 	VkQueue m_GraphicsQueue;
 	VkQueue m_PresentQueue;
+
+	VkSampleCountFlagBits m_MsaaSamples;
 };

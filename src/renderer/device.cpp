@@ -8,10 +8,11 @@
 
 
 Device::Device()
-	: m_VulkanInstance{nullptr}, 
-	  m_WindowSurface{nullptr}, 
+	: m_VulkanInstance{nullptr},
+	  m_WindowSurface{nullptr},
 	  m_Config{nullptr},
-	  m_PhysicalDevice{VK_NULL_HANDLE}
+	  m_PhysicalDevice{VK_NULL_HANDLE},
+	  m_MsaaSamples{VK_SAMPLE_COUNT_1_BIT}
 {
 
 }
@@ -45,6 +46,7 @@ void Device::PickPhysicalDevice()
 		if (IsDeviceSuitable(device))
 		{
 			m_PhysicalDevice = device;
+			m_MsaaSamples = GetMaxUsableSampleCount();
 			break;
 		}
 	}
@@ -71,7 +73,7 @@ void Device::CreateLogicalDevice()
 		indices.graphicsFamily.value(),
 		indices.presentFamily.value()
 	};
-	
+
 	float queuePriority = 1.0f;
 	for (const auto& queueFamily : uniqueQueueFamilies)
 	{
@@ -86,7 +88,7 @@ void Device::CreateLogicalDevice()
 	// specify used device features
 	VkPhysicalDeviceFeatures deviceFeatures{};
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
-	
+
 	// create logical device
 	VkDeviceCreateInfo deviceCreateInfo{};
 	deviceCreateInfo.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -151,4 +153,32 @@ bool Device::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
 		requiredExtensions.erase(extension.extensionName);
 
 	return requiredExtensions.empty();
+}
+
+VkSampleCountFlagBits Device::GetMaxUsableSampleCount()
+{
+	VkPhysicalDeviceProperties physicalDeviceProperties;
+	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &physicalDeviceProperties);
+
+	VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
+	if (counts & VK_SAMPLE_COUNT_64_BIT)
+		return VK_SAMPLE_COUNT_64_BIT;
+
+	if (counts & VK_SAMPLE_COUNT_32_BIT)
+		return VK_SAMPLE_COUNT_32_BIT;
+
+	if (counts & VK_SAMPLE_COUNT_16_BIT)
+		return VK_SAMPLE_COUNT_16_BIT;
+
+	if (counts & VK_SAMPLE_COUNT_8_BIT)
+		return VK_SAMPLE_COUNT_8_BIT;
+
+	if (counts & VK_SAMPLE_COUNT_4_BIT)
+		return VK_SAMPLE_COUNT_4_BIT;
+
+	if (counts & VK_SAMPLE_COUNT_2_BIT)
+		return VK_SAMPLE_COUNT_2_BIT;
+
+	return VK_SAMPLE_COUNT_1_BIT;
 }

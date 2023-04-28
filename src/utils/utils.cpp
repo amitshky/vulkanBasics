@@ -23,7 +23,7 @@ uint32_t FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, Vk
 
 SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface)
 {
-	// Simply checking swapchain availability is not enough, 
+	// Simply checking swapchain availability is not enough,
 	// we need to check if it is supported by our window surface or not
 	// We need to check for:
 	// * basic surface capabilities (min/max number of images in swap chain)
@@ -68,7 +68,7 @@ QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceK
 	{
 		if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			indices.graphicsFamily = i;
-		
+
 		// check for queue family compatible for presentation
 		// the graphics queue and the presentation queue might end up being the same
 		// but we treat them as separate queues
@@ -77,7 +77,7 @@ QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceK
 
 		if (presentSupport)
 			indices.presentFamily = i;
-		
+
 		if (indices.IsComplete())
 			break;
 	}

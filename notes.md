@@ -318,3 +318,16 @@
 * mipmaps are stored in mip levels of `VkImage`
 * to fill the mip levels of the staging buffer, we blit the data to each level
 * usually the mipmaps are not generated at runtime (as we have done)
+
+
+## Multisampling
+* **MSAA (Multisample Anti Aliasing):**
+	* uses multiple samples per pixel
+	* the color of the pixel depends on how many samples the line passing through the pixel covers
+	* each pixel is sampled in an offscreen buffer and then rendered to the screen
+		* which is a little different than the regular images
+	* after the multisampled buffer has been created, it has to be resolved to the default framebuffer
+		* framebuffer only stores a single sample per pixel
+	* so we need to create an additional render target
+		* because only one draw operation is active at a time
+		* similar to depth buffer

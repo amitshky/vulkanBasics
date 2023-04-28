@@ -65,7 +65,7 @@ private:
 	std::unique_ptr<Window> m_Window;
 	std::unique_ptr<VulkanContext> m_VulkanContext;
 	std::unique_ptr<WindowSurface> m_WindowSurface;
-	
+
 	std::unique_ptr<Device> m_Device;
 	std::unique_ptr<Swapchain> m_Swapchain;
 	std::unique_ptr<Pipeline> m_GraphicsPipeline;
@@ -78,7 +78,7 @@ private:
 
 	std::unique_ptr<Texture> m_Texture;
 	std::unique_ptr<UniformBuffer> m_UniformBuffers;
-	
+
 	std::unique_ptr<Camera> m_Camera;
 
 	// synchronization objects
@@ -92,7 +92,7 @@ private:
 
 	// check for resize
 	bool m_FramebufferResized = false;
-	
+
 	// for delta time
 	float m_LastFrameTime = 0.0f;
 	float m_DeltaTime     = 0.0f;

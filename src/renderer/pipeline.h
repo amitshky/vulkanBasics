@@ -9,7 +9,7 @@
 class Pipeline
 {
 public:
-	Pipeline(VkDevice deviceVk, VkRenderPass renderPass);
+	Pipeline(VkDevice deviceVk, VkRenderPass renderPass, VkSampleCountFlagBits msaaSamples);
 	~Pipeline();
 
 	inline VkPipeline GetPipeline() const { return m_Pipeline; }
@@ -24,6 +24,7 @@ private:
 private:
 	VkDevice m_DeviceVk;
 	VkRenderPass m_RenderPass;
+	VkSampleCountFlagBits m_MsaaSamples;
 
 	VkDescriptorSetLayout m_DescriptorSetLayout;
 

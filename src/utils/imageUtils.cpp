@@ -11,7 +11,8 @@ namespace utils
 namespace img
 {
 
-void CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+void CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, uint32_t mipLevels,
+	VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 	VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
 	VkImageCreateInfo imgCreateInfo{};
@@ -27,7 +28,7 @@ void CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t wi
 	imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // not needed because we copy the texel data from the buffer
 	imgCreateInfo.usage         = usage; // `VK_IMAGE_USAGE_SAMPLED_BIT` because we also want the image to be accessed from the shader
 	imgCreateInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
-	imgCreateInfo.samples       = VK_SAMPLE_COUNT_1_BIT; // for multisampling
+	imgCreateInfo.samples       = numSamples;
 	imgCreateInfo.flags         = 0; // for sparse images
 
 	if (vkCreateImage(deviceVk, &imgCreateInfo, nullptr, &image) != VK_SUCCESS)
@@ -67,7 +68,8 @@ VkImageView CreateImageView(VkDevice deviceVk, VkImage image, VkFormat format, V
 	return imageView;
 }
 
-void GenerateMipmaps(VkDevice deviceVk, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, VkImage image, VkFormat format, int32_t width, int32_t height, uint32_t mipLevels)
+void GenerateMipmaps(VkDevice deviceVk, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue,
+	VkImage image, VkFormat format, int32_t width, int32_t height, uint32_t mipLevels)
 {
 	// TODO: load mipmaps from a file instead of generating them
 
