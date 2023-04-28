@@ -304,3 +304,8 @@
 * similar to the color attachment, depth attachment is also based on image. But for depth attachment, the swapchain will not automatically create depth images.
 * because only one draw operation is running at once, we only need one depth image.
 * a subpass can only use a single depth + stencil buffer
+
+
+## Loading model
+* Load vertex and index data from the model
+* replace it in the existing vertex and index data

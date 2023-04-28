@@ -65,3 +65,11 @@ OR (using bat scripts from `scripts` folder)
 * Depth buffer
 
 	<img src="img/depth buffer.png" width=450>
+
+* Cube
+
+	<img src="img/cube.png" width=450>
+
+* Loading model
+
+	<img src="img/viking_room.png" width=450>
