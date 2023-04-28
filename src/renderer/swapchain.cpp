@@ -91,7 +91,7 @@ void Swapchain::CreateSwapchainImageViews()
 	m_SwapchainImageViews.resize(m_SwapchainImages.size());
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
-		m_SwapchainImageViews[i] = utils::img::CreateImageView(m_Device->GetDevice(), m_SwapchainImages[i], m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		m_SwapchainImageViews[i] = utils::img::CreateImageView(m_Device->GetDevice(), m_SwapchainImages[i], m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 }
 
 void Swapchain::CreateRenderPass()
@@ -168,9 +168,9 @@ void Swapchain::CreateDepthResources()
 {
 	VkFormat depthFormat = FindDepthFormat();
 
-	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_SwapchainExtent.width, m_SwapchainExtent.height, depthFormat,
+	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_SwapchainExtent.width, m_SwapchainExtent.height, 1, depthFormat,
 		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
-	m_DepthImageView = utils::img::CreateImageView(m_Device->GetDevice(), m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	m_DepthImageView = utils::img::CreateImageView(m_Device->GetDevice(), m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	// we don't need to map or copy another image to it, because it is going to be cleared at the start of the render.
 }
 

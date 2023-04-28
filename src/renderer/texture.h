@@ -6,7 +6,7 @@
 #include "renderer/buffer/commandBuffer.h"
 
 
-class Texture 
+class Texture
 {
 public:
 	Texture(const Device* device, const CommandBuffer* commandBuffers);
@@ -20,12 +20,13 @@ private:
 	void CreateTextureImageView();
 	void CreateTextureSampler();
 
-	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 
 private:
 	const Device* m_Device;
 	const CommandBuffer* m_CommandBuffers;
 
+	uint32_t m_MipLevels;
 	VkImage m_TextureImage;
 	VkDeviceMemory m_TextureImageMemory;
 	VkImageView m_TextureImageView;

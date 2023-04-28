@@ -309,3 +309,12 @@
 ## Loading model
 * Load vertex and index data from the model
 * replace it in the existing vertex and index data
+
+
+## Generating Mipmaps
+* Mipmaps are precalculated downscaled versions of an image
+	* each level of mipmap is half of the the previous one
+* used as *Level of detail* (LOD)
+* mipmaps are stored in mip levels of `VkImage`
+* to fill the mip levels of the staging buffer, we blit the data to each level
+* usually the mipmaps are not generated at runtime (as we have done)

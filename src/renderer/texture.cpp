@@ -1,6 +1,8 @@
 #include "texture.h"
 
 #include <stdexcept>
+#include <cmath>
+#include <algorithm>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image/stb_image.h"
@@ -42,13 +44,16 @@ void Texture::CreateTextureImage()
 	if (!imgData)
 		throw std::runtime_error("Failed to load texture image!");
 
+	// calc mipmap levels
+	m_MipLevels = static_cast<uint32_t>(std::log2(std::max(width, height))) + 1;
+
 	// create a staging buffer
 	// we can use a staging image object but we are using VkBuffer
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
-	utils::buff::CreateBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), imgSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+	utils::buff::CreateBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), imgSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 	void* data;
@@ -58,24 +63,30 @@ void Texture::CreateTextureImage()
 
 	stbi_image_free(imgData);
 
-	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), static_cast<uint32_t>(width), static_cast<uint32_t>(height), 
-		VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+	// to blit the image we use this image as both src and destination (blit is a transfer command)
+	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), static_cast<uint32_t>(width), static_cast<uint32_t>(height), m_MipLevels,
+		VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage, m_TextureImageMemory);
 
 	// copy staging buffer to the texture image
 	// transfer the image layout to DST_OPTIMAl
-	TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	utils::buff::CopyBufferToImage(m_Device->GetDevice(), m_Device->GetGraphicsQueue(), m_CommandBuffers->GetCommandPool(), 
+	TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels);
+	utils::buff::CopyBufferToImage(m_Device->GetDevice(), m_Device->GetGraphicsQueue(), m_CommandBuffers->GetCommandPool(),
 		stagingBuffer, m_TextureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
 	// to start sampling from the texture image in the shader
-	TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	// uncomment and `m_MipLevels` to 1 (as a whole, not just for this function), if you are not generating mipmaps
+	//TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_MipLevels);
+
+	// fill texture image mipmaps
+	utils::img::GenerateMipmaps(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_CommandBuffers->GetCommandPool(), m_Device->GetGraphicsQueue(),
+		m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, width, height, m_MipLevels);
 
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
 	vkFreeMemory(m_Device->GetDevice(), stagingBufferMemory, nullptr);
 }
 
-void Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+void Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
 {
 	// to copy the buffer into the image, we need the image to be in the right layout first
 	// one way to perform layout transitions is the use image memory barrier
@@ -91,7 +102,7 @@ void Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayou
 	// specific part of the image that is affected
 	imgMemBarrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 	imgMemBarrier.subresourceRange.baseMipLevel   = 0;
-	imgMemBarrier.subresourceRange.levelCount     = 1;
+	imgMemBarrier.subresourceRange.levelCount     = mipLevels;
 	imgMemBarrier.subresourceRange.baseArrayLayer = 0;
 	imgMemBarrier.subresourceRange.layerCount     = 1;
 
@@ -102,7 +113,7 @@ void Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayou
 	VkPipelineStageFlags srcStage;
 	VkPipelineStageFlags dstStage;
 
-	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) 
+	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 	{
 		imgMemBarrier.srcAccessMask = 0;
 		imgMemBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -118,11 +129,11 @@ void Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayou
 		srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 	}
-	else 
+	else
 	{
 		throw std::runtime_error("Unsupported layout transition!");
 	}
-	
+
 	vkCmdPipelineBarrier(cmdBuff, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &imgMemBarrier);
 
 	utils::cmd::EndSingleTimeCommands(m_Device->GetDevice(), m_Device->GetGraphicsQueue(), m_CommandBuffers->GetCommandPool(), cmdBuff);
@@ -130,11 +141,12 @@ void Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayou
 
 void Texture::CreateTextureImageView()
 {
-	m_TextureImageView = utils::img::CreateImageView(m_Device->GetDevice(), m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+	m_TextureImageView = utils::img::CreateImageView(m_Device->GetDevice(), m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels);
 }
 
 void Texture::CreateTextureSampler()
 {
+	// VkImage holds the image data, the VkSampler controls how that data is read while rendering
 	VkPhysicalDeviceProperties phyDevProperties{};
 	vkGetPhysicalDeviceProperties(m_Device->GetPhysicalDevice(), &phyDevProperties);
 
@@ -148,12 +160,15 @@ void Texture::CreateTextureSampler()
 	samplerCreateInfo.anisotropyEnable = VK_TRUE;
 	samplerCreateInfo.maxAnisotropy    = phyDevProperties.limits.maxSamplerAnisotropy;
 	samplerCreateInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // specifies which color is returned when sampling beyond the image with clamp to border addressing mode
-	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE; // specifies which coordinate system you want to use to address texels in an image. 
+	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE; // specifies which coordinate system you want to use to address texels in an image.
 														  // If this field is VK_TRUE, then you can simply use coordinates within the [0, texWidth) and [0, texHeight) range
 	samplerCreateInfo.compareEnable = VK_FALSE;
 	samplerCreateInfo.compareOp     = VK_COMPARE_OP_ALWAYS;
 	samplerCreateInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCreateInfo.minLod        = 0.0f;
+	samplerCreateInfo.maxLod        = static_cast<float>(m_MipLevels);
+	samplerCreateInfo.mipLodBias    = 0.0f; // lets us force vulkan to use lower LOD and level than it would normally use
 
 	if (vkCreateSampler(m_Device->GetDevice(), &samplerCreateInfo, nullptr, &m_TextureSampler) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create Texture sampler!");
+		throw std::runtime_error("Failed to create texture sampler!");
 }
