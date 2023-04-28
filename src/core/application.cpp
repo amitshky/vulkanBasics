@@ -10,56 +10,6 @@
 #include <cmath>
 
 
-// vertex data
-std::vector<Vertex> vertices{
-	// the colors don't matter at the moment
-	// front
-	{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 0; position: top-left;     color: red
-	{ {  0.5f, -0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 1; position: top-right;    color: green
-	{ {  0.5f,  0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 2; position: bottom-right; color: blue
-	{ { -0.5f,  0.5f, 0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 3; position: bottom-left;  color: magenta
-
-	// right
-	{ {  0.5f, -0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 4; position: top-left;    color: green
-	{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 5; position: top-right;    color: green
-	{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 6; position: bottom-right; color: blue
-	{ {  0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 7; position: bottom-left; color: blue
-
-	// back
-	{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 8; position: top-left;    color: green
-	{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 8; position: top-right;     color: red
-	{ { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 10; position: bottom-right;  color: magenta
-	{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 11; position: bottom-left; color: blue
-
-	// left
-	{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 12; position: top-left;     color: red
-	{ { -0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 13; position: top-right;     color: red
-	{ { -0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 14; position: bottom-right;  color: magenta
-	{ { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }, // index: 15; position: bottom-left;  color: magenta
-
-	// top
-	{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // index: 16; position: top-left;     color: red
-	{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } }, // index: 17; position: top-right;    color: green
-	{ {  0.5f, -0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f } }, // index: 18; position: bottom-right;    color: green
-	{ { -0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f } }, // index: 19; position: bottom-left;     color: red
-
-	// bottom
-	{ { -0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } }, // index: 20; position: top-left;  color: magenta
-	{ {  0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f } }, // index: 21; position: top-right; color: blue
-	{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } }, // index: 22; position: bottom-right; color: blue
-	{ { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }  // index: 23; position: bottom-left;  color: magenta
-};
-
-// indices for index buffer
-std::vector<uint16_t> indices = {
-	0, 1, 2, 2, 3, 0, // front
-	4, 5, 6, 6, 7, 4, // right
-	8, 9, 10, 10, 11, 8, // back
-	12, 13, 14, 14, 15, 12, // left
-	16, 17, 18, 18, 19, 16, // top
-	20, 21, 22, 22, 23, 20  // bottom
-};
-
 const VulkanConfig config{
 #ifdef NDEBUG // Release mode
 	false,
@@ -84,12 +34,13 @@ Application::Application(const char* title, int32_t width, int32_t height)
 	  m_Device{std::make_unique<Device>(m_VulkanContext->GetInstance(), m_WindowSurface->GetSurface(), m_Config)},
 	  m_Swapchain{std::make_unique<Swapchain>(m_Window->GetWindowContext(), m_Device.get(), m_WindowSurface->GetSurface())},
 	  m_GraphicsPipeline{std::make_unique<Pipeline>(m_Device->GetDevice(), m_Swapchain->GetRenderPass())},
+	  m_Model{std::make_unique<Model>("assets/models/viking_room.obj")},
 	  m_CommandBuffers{std::make_unique<CommandBuffer>(config.MAX_FRAMES_IN_FLIGHT, m_WindowSurface->GetSurface(), m_Device.get())},
-	  m_VertexBuffer{std::make_unique<VertexBuffer>(m_Device.get(), m_CommandBuffers.get(), vertices)},
-	  m_IndexBuffer{std::make_unique<IndexBuffer>(m_Device.get(), m_CommandBuffers.get(), indices)},
+	  m_VertexBuffer{std::make_unique<VertexBuffer>(m_Device.get(), m_CommandBuffers.get(), m_Model->GetVertices())},
+	  m_IndexBuffer{std::make_unique<IndexBuffer>(m_Device.get(), m_CommandBuffers.get(), m_Model->GetIndices())},
 	  m_Texture{std::make_unique<Texture>(m_Device.get(), m_CommandBuffers.get())},
 	  m_UniformBuffers{std::make_unique<UniformBuffer>(config.MAX_FRAMES_IN_FLIGHT, m_Device.get(), m_GraphicsPipeline.get(), m_Texture.get())},
-	  m_Camera{std::make_unique<Camera>(width / (float)height)}
+	  m_Camera{std::make_unique<Camera>(static_cast<float>(width) / static_cast<float>(height))}
 {
 	RegisterEvents();
 	InitVulkan();
@@ -102,7 +53,7 @@ Application::~Application()
 
 void Application::Run()
 {
-	float prevFrameRate = 0.0f;
+	const float prevFrameRate = 0.0f;
 	// TODO: change this to check for isRunning (member variable of this class)
 	while (!glfwWindowShouldClose(m_Window->GetWindowContext()))
 	{
@@ -111,7 +62,7 @@ void Application::Run()
 		m_DeltaTime     = currentFrameTime - m_LastFrameTime;
 		m_LastFrameTime = currentFrameTime;
 
-		printf("\r%8.2f fps", 1 / m_DeltaTime);
+		printf("\r%8d fps", static_cast<uint32_t>(1 / m_DeltaTime));
 
 		m_Camera->OnUpdate(m_Window->GetWindowContext(), m_DeltaTime, m_Swapchain->GetWidth(), m_Swapchain->GetHeight());
 		DrawFrame();
@@ -197,14 +148,14 @@ void Application::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 	VkBuffer vertexBuffers[] = { m_VertexBuffer->GetVertexBuffer() };
 	VkDeviceSize offsets[]   = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	// descriptor sets are not unique to graphics or compute pipeline so we need to specify it
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->GetLayout(), 0, 1, &m_UniformBuffers->GetDescriptorSetAtIndex(m_CurrentFrameIdx), 0, nullptr);
 
 	//vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 	// the draw command changes if index buffers are used
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_Model->GetIndices().size()), 1, 0, 0, 0);
 
 	// end render pass
 	vkCmdEndRenderPass(commandBuffer);

@@ -7,7 +7,7 @@
 
 
 Pipeline::Pipeline(VkDevice deviceVk, VkRenderPass renderPass)
-	: m_DeviceVk{deviceVk}, 
+	: m_DeviceVk{deviceVk},
 	  m_RenderPass{renderPass}
 {
 	CreateDescriptorSetLayout();
@@ -61,7 +61,7 @@ void Pipeline::CreateGraphicsPipeline()
 	rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;                // if true, the geometry never passes through rasterizer stage
 	rasterizationStateCreateInfo.polygonMode             = VK_POLYGON_MODE_FILL;    // how fragments are generated
 	rasterizationStateCreateInfo.lineWidth               = 1.0f;                    // thickness of lines
-	rasterizationStateCreateInfo.cullMode                = VK_CULL_MODE_BACK_BIT;   // type of face culling; cull the back face
+	rasterizationStateCreateInfo.cullMode                = VK_CULL_MODE_NONE;   // type of face culling; cull the back face
 	// we specify counter clockwise because in the projection matrix we flipped the y-coord
 	rasterizationStateCreateInfo.frontFace               = VK_FRONT_FACE_CLOCKWISE; // vertex order for faces to be considered front-face
 	// the depth value can be altered by adding a constant value based on fragment slope
@@ -191,7 +191,7 @@ void Pipeline::CreateDescriptorSetLayout()
 	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
-	
+
 	VkDescriptorSetLayoutCreateInfo descriptorLayoutCreateInfo{};
 	descriptorLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	descriptorLayoutCreateInfo.bindingCount = static_cast<uint32_t>(bindings.size());

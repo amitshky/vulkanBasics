@@ -2,15 +2,19 @@
 
 #include <array>
 #include <vector>
+#include <functional>
 
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 #include "renderer/device.h"
 #include "renderer/buffer/commandBuffer.h"
 
 
-struct Vertex 
+struct Vertex
 {
 	glm::vec3 pos;
 	glm::vec3 color;
@@ -46,10 +50,27 @@ struct Vertex
 		attributeDescriptions[2].offset   = offsetof(Vertex, texCoord); // number of bytes from the begining of the per-vertex data
 		return attributeDescriptions;
 	}
+
+	bool operator==(const Vertex& other) const
+	{
+		return pos == other.pos && color == other.color && texCoord == other.texCoord;
+	}
 };
 
+// hash function
+namespace std {
+	template<>
+	struct hash<Vertex>
+	{
+		size_t operator()(Vertex const& vertex) const
+		{
+			return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
+		}
+	};
+} // namespace std
 
-class VertexBuffer 
+
+class VertexBuffer
 {
 public:
 	VertexBuffer(const Device* device, const CommandBuffer* commandBuffers, const std::vector<Vertex>& vertices);
@@ -62,8 +83,8 @@ private:
 
 private:
 	const Device* m_Device;
-	const CommandBuffer* m_CommandBuffers; 
-	
+	const CommandBuffer* m_CommandBuffers;
+
 	std::vector<Vertex> m_Vertices;
 
 	VkBuffer m_VertexBuffer;

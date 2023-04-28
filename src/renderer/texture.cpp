@@ -34,8 +34,9 @@ void Texture::CreateTextureImage()
 	int height = 0;
 	int channels = 0;
 
-	//                                                                               // force alpha (even if there isnt one)
-	auto imgData = stbi_load("assets/textures/texture.jpg", &width, &height, &channels, STBI_rgb_alpha);
+	// TODO: pass texture path in the class constructor and make this class more dynamic so that we can simply call this class to create and manage textures
+	// force alpha (even if there isnt one)
+	auto imgData = stbi_load("assets/textures/viking_room.png", &width, &height, &channels, STBI_rgb_alpha);
 	VkDeviceSize imgSize = width * height * 4;
 
 	if (!imgData)

@@ -36,6 +36,7 @@ target_include_directories(
 	"lib/"
 	"lib/glm/"
 	"lib/glfw/include/"
+	"tinyobjloader/tiny_obj_loader.h"
 	${Vulkan_INCLUDE_DIR} 
 )
 

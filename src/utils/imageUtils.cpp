@@ -30,7 +30,7 @@ void CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t wi
 	imgCreateInfo.flags         = 0; // for sparse images
 
 	if (vkCreateImage(deviceVk, &imgCreateInfo, nullptr, &image) != VK_SUCCESS)
-		throw std::runtime_error("Failed to create texture image object!");
+		throw std::runtime_error("Failed to create image object!");
 
 	VkMemoryRequirements memRequirements;
 	vkGetImageMemoryRequirements(deviceVk, image, &memRequirements);

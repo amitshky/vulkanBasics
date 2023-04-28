@@ -40,7 +40,7 @@ void UniformBuffer::CreateUniformBuffers()
 
 	for (size_t i = 0; i < m_MaxFramesInFlight; ++i)
 	{
-		utils::buff::CreateBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+		utils::buff::CreateBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffers[i], m_UniformBuffersMemory[i]);
 
 		//                    // actual buffer in GPU                      // buffer mapped to the CPU
@@ -115,7 +115,7 @@ void UniformBuffer::CreateDescriptorSets()
 		descriptorWrites[1].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		descriptorWrites[1].descriptorCount = 1; // number of elements you want to update
 		descriptorWrites[1].pImageInfo     = &descriptorImageInfo;
-		
+
 		// updates the configurations of the descriptor sets
 		vkUpdateDescriptorSets(m_Device->GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
@@ -129,10 +129,11 @@ void UniformBuffer::Update(uint32_t currentFrameIdx, const Camera* camera)
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	UniformBufferObject ubo{};
-	ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+				glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) *
+				glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.5f));
 	ubo.view  = camera->GetViewMatrix();
 	ubo.proj  = camera->GetProjectionMatrix();
-	//ubo.proj[1][1] *= -1; // glm was designed for opengl where the y-coord for clip coordinate is flipped
 
 	// copy the data from ubo to the uniform buffer (in GPU)
 	memcpy(m_UniformBuffersMapped[currentFrameIdx], &ubo, sizeof(ubo));

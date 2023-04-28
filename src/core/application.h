@@ -23,6 +23,8 @@
 #include "renderer/pipeline.h"
 #include "renderer/texture.h"
 
+#include "renderer/model.h"
+
 #include "renderer/buffer/commandBuffer.h"
 #include "renderer/buffer/vertexBuffer.h"
 #include "renderer/buffer/indexBuffer.h"
@@ -67,6 +69,8 @@ private:
 	std::unique_ptr<Device> m_Device;
 	std::unique_ptr<Swapchain> m_Swapchain;
 	std::unique_ptr<Pipeline> m_GraphicsPipeline;
+
+	std::unique_ptr<Model> m_Model;
 
 	std::unique_ptr<CommandBuffer> m_CommandBuffers;
 	std::unique_ptr<VertexBuffer> m_VertexBuffer;

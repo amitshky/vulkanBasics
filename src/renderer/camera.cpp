@@ -6,16 +6,28 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 
+// initial values
+constexpr glm::vec3 g_CameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+constexpr glm::vec3 g_CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+constexpr glm::vec3 g_CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+constexpr glm::vec3 g_Target = glm::vec3(0.0f, 0.0f, 0.0f);
+constexpr float g_Yaw = -90.0f;
+constexpr float g_Pitch = 0.0f;
+constexpr float g_FOVy = glm::radians(45.0f);
+constexpr float g_ZNear = 0.1f;
+constexpr float g_ZFar = 50.0f;
+
+
 Camera::Camera(float aspectRatio)
-	: m_CameraPos{glm::vec3(0.0f, 0.0f, 4.0f)},
-	  m_CameraFront{glm::vec3(0.0f, 0.0f, -1.0f)},
-	  m_CameraUp{glm::vec3(0.0f, 1.0f, 0.0f)},
-	  m_Target{glm::vec3(0.0f, 0.0f, 0.0f)},
-	  m_Yaw{-90.0f}, m_Pitch{0.0f},
+	: m_CameraPos{g_CameraPos},
+	  m_CameraFront{g_CameraFront},
+	  m_CameraUp{g_CameraUp},
+	  m_Target{g_Target},
+	  m_Yaw{g_Yaw}, m_Pitch{g_Pitch},
 	  m_LastX{0.0f}, m_LastY{0.0f},
-	  m_FOVy{glm::radians(45.0f)},
-	  m_ZNear{0.1f},
-	  m_ZFar{50.0f},
+	  m_FOVy{g_FOVy},
+	  m_ZNear{g_ZNear},
+	  m_ZFar{g_ZFar},
 	  m_ViewMatrix{},
 	  m_ProjectionMatrix{}
 {
@@ -25,8 +37,8 @@ Camera::Camera(float aspectRatio)
 void Camera::OnUpdate(GLFWwindow* window, float deltaTime, uint32_t width, uint32_t height)
 {
 	m_ViewMatrix = glm::lookAt(m_CameraPos, m_CameraPos + m_CameraFront, m_CameraUp);
-	//m_ViewMatrix = glm::lookAt(m_CameraPos, m_Target, m_CameraUp);
-	m_ProjectionMatrix = glm::perspective(m_FOVy, width / (float)height, m_ZNear, m_ZFar);
+	m_ProjectionMatrix = glm::perspective(m_FOVy, width / static_cast<float>(height), m_ZNear, m_ZFar);
+	m_ProjectionMatrix[1][1] *= -1; // glm was designed for opengl where the y-coord for clip coordinate is flipped
 
 	// movement
 	const float cameraSpeed = 5.0f * deltaTime;
@@ -44,25 +56,25 @@ void Camera::OnUpdate(GLFWwindow* window, float deltaTime, uint32_t width, uint3
 	{
 		const glm::vec3 rightVec = glm::cross(m_CameraFront, m_CameraUp);
 		const glm::vec3 upVec    = glm::cross(rightVec, m_CameraFront);
-		m_CameraPos -= cameraSpeed * glm::normalize(upVec); // minus becuause y is flipped
+		m_CameraPos += cameraSpeed * glm::normalize(upVec);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) // down
 	{
 		const glm::vec3 rightVec = glm::cross(m_CameraFront, m_CameraUp);
 		const glm::vec3 upVec    = glm::cross(rightVec, m_CameraFront);
-		m_CameraPos += cameraSpeed * glm::normalize(upVec);
+		m_CameraPos -= cameraSpeed * glm::normalize(upVec);
 	}
 
 	// reset camera
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
 	{
 		m_FirstMouseMove = true;
-		m_CameraPos = glm::vec3(0.0f, 0.0f, 4.0f);
-		m_CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-		m_CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-		m_Target = glm::vec3(0.0f, 0.0f, 0.0f);
-		m_Yaw = -90.0f;
-		m_Pitch = 0.0f;
+		m_CameraPos = g_CameraPos;
+		m_CameraFront = g_CameraFront;
+		m_CameraUp = g_CameraUp;
+		m_Target = g_Target;
+		m_Yaw = g_Yaw;
+		m_Pitch = g_Pitch;
 		m_LastX = 0.0f;
 		m_LastY = 0.0f;
 	}
@@ -92,7 +104,7 @@ void Camera::OnMouseMove(GLFWwindow* window, double xpos, double ypos)
 	m_LastY = ypos;
 
 	m_Yaw += xOffset;
-	m_Pitch += yOffset;
+	m_Pitch -= yOffset; // negative because the y coord is flupped in projection matrix
 
 	if (m_Pitch > 89.0f)
 		m_Pitch = 89.0f;

@@ -1,26 +1,3 @@
-# clangd cache
-.cache/
-
-# build files
-build/
-
-# SPIR-V files
-*.spv
-
-### Visual studio files ###
-.vs/
-
-### vscode ###
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
-!.vscode/c_cpp_properties.json
-
-*.code-workspace
-
 # Local History for Visual Studio Code
 .history/
 
@@ -61,3 +38,31 @@ build/
 *.exe
 *.out
 *.app
+
+
+######## project gitignore ###########
+# clangd cache
+.cache/
+
+# build files
+build/
+
+# SPIR-V files
+*.spv
+
+### Visual studio files ###
+.vs/
+
+### vscode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+!.vscode/c_cpp_properties.json
+
+*.code-workspace
+
+# 3d model assets
+!assets/**/*.obj

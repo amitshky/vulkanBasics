@@ -6,7 +6,7 @@
 #include "utils/bufferUtils.h"
 
 
-IndexBuffer::IndexBuffer(const Device* device, const CommandBuffer* commandBuffers, const std::vector<uint16_t>& indices)
+IndexBuffer::IndexBuffer(const Device* device, const CommandBuffer* commandBuffers, const std::vector<uint32_t>& indices)
 	: m_Device{device},
 	  m_CommandBuffers{commandBuffers},
 	  m_Indices{indices}
