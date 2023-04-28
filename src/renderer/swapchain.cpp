@@ -9,15 +9,17 @@
 #include "utils/imageUtils.h"
 
 
-Swapchain::Swapchain(GLFWwindow* windowContext, const Device* device, VkSurfaceKHR windowSurface)
+Swapchain::Swapchain(GLFWwindow* windowContext, const Device* device, VkSurfaceKHR windowSurface, VkSampleCountFlagBits msaaSamples)
 	: m_WindowContext{windowContext},
 	  m_Device{device},
-	  m_WindowSurface{windowSurface}
+	  m_WindowSurface{windowSurface},
+	  m_MsaaSamples{msaaSamples}
 {
 	CreateSwapchain();
 	CreateSwapchainImageViews();
-	CreateDepthResources();
 	CreateRenderPass();
+	CreateColorResources();
+	CreateDepthResources();
 	CreateFramebuffers();
 }
 
@@ -99,7 +101,7 @@ void Swapchain::CreateRenderPass()
 	// color attachment
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format  = m_SwapchainImageFormat; // the format should match the format of the swapchain
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;  // we dont have multisampling yet
+	colorAttachment.samples = m_MsaaSamples;
 	// determining what to do with the data in the attachment before and after rendering
 	colorAttachment.loadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;  // clear the framebuffer before drawing the next frame
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // store the rendered contents in the memory
@@ -107,19 +109,31 @@ void Swapchain::CreateRenderPass()
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	// the textures and framebuffer are represented by `VkImage`, with a certain pixel format
 	// the layout of the pixel format can be changed based on what you're trying to do
-	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;       // we don't care about the previous layout of the image (before the render pass begins)
-	colorAttachment.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // the image to be presented in the swapchain (when the render pass finishes)
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // we don't care about the previous layout of the image (before the render pass begins)
+	colorAttachment.finalLayout   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // the image to be presented in the swapchain (when the render pass finishes)
 
 	// depth attachment
 	VkAttachmentDescription depthAttachment{};
 	depthAttachment.format         = FindDepthFormat();
-	depthAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.samples        = m_MsaaSamples;
 	depthAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE; // we don't care about storing depth data
 	depthAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
 	depthAttachment.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	// color resolve attachment
+	// multisampled images cannot be presented directly, they need to be resolved first
+	VkAttachmentDescription colorAttachmentResolve{};
+	colorAttachmentResolve.format         = m_SwapchainImageFormat;
+	colorAttachmentResolve.samples        = VK_SAMPLE_COUNT_1_BIT; // 1 sample because this is after MSAA
+	colorAttachmentResolve.loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachmentResolve.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachmentResolve.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachmentResolve.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	// attachment references
 	// every subpass references one or more of the attachments
@@ -131,6 +145,10 @@ void Swapchain::CreateRenderPass()
 	depthAttacmentRef.attachment = 1;
 	depthAttacmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+	VkAttachmentReference colorAttachmentResolveRef{};
+	colorAttachmentResolveRef.attachment = 2;
+	colorAttachmentResolveRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 	// subpass
 	VkSubpassDescription subpass{};
 	subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS; // graphics subpass
@@ -138,6 +156,7 @@ void Swapchain::CreateRenderPass()
 	// the index of the attachment in this array is directly referenced from the fragment shader // layout (location=0) out vec4 outColor
 	subpass.pColorAttachments       = &colorAttachmentRef;
 	subpass.pDepthStencilAttachment = &depthAttacmentRef;
+	subpass.pResolveAttachments     = &colorAttachmentResolveRef;
 
 	// subpass dependencies control the image layout transitions
 	VkSubpassDependency subpassDependency{};
@@ -149,7 +168,7 @@ void Swapchain::CreateRenderPass()
 	subpassDependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 	subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-	std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+	std::array<VkAttachmentDescription, 3> attachments = { colorAttachment, depthAttachment, colorAttachmentResolve };
 	// render pass
 	VkRenderPassCreateInfo renderPassCreateInfo{};
 	renderPassCreateInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -164,12 +183,29 @@ void Swapchain::CreateRenderPass()
 		throw std::runtime_error("Failed to create render pass!");
 }
 
+// for multisampling
+// multisampling requires a new render target
+void Swapchain::CreateColorResources()
+{
+	VkFormat colorFormat = m_SwapchainImageFormat;
+
+	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_SwapchainExtent.width, m_SwapchainExtent.height,
+		1, m_MsaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		m_ColorImage, m_ColorImageMemory);
+
+	m_ColorImageView = utils::img::CreateImageView(m_Device->GetDevice(), m_ColorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+}
+
 void Swapchain::CreateDepthResources()
 {
 	VkFormat depthFormat = FindDepthFormat();
 
-	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_SwapchainExtent.width, m_SwapchainExtent.height, 1, depthFormat,
-		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
+	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_SwapchainExtent.width, m_SwapchainExtent.height,
+		1, m_MsaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		m_DepthImage, m_DepthImageMemory);
+
 	m_DepthImageView = utils::img::CreateImageView(m_Device->GetDevice(), m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	// we don't need to map or copy another image to it, because it is going to be cleared at the start of the render.
 }
@@ -180,9 +216,10 @@ void Swapchain::CreateFramebuffers()
 
 	for (size_t i = 0; i < m_SwapchainImageViews.size(); ++i)
 	{
-		std::array<VkImageView, 2> attachments = {
-			m_SwapchainImageViews[i],
-			m_DepthImageView
+		std::array<VkImageView, 3> attachments = {
+			m_ColorImageView,
+			m_DepthImageView,
+			m_SwapchainImageViews[i]
 		};
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
@@ -204,6 +241,10 @@ void Swapchain::CleanupSwapchain()
 	vkDestroyImageView(m_Device->GetDevice(), m_DepthImageView, nullptr);
 	vkDestroyImage(m_Device->GetDevice(), m_DepthImage, nullptr);
 	vkFreeMemory(m_Device->GetDevice(), m_DepthImageMemory, nullptr);
+
+	vkDestroyImageView(m_Device->GetDevice(), m_ColorImageView, nullptr);
+	vkDestroyImage(m_Device->GetDevice(), m_ColorImage, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_ColorImageMemory, nullptr);
 
 	for (auto framebuffer : m_SwapchainFramebuffers)
 		vkDestroyFramebuffer(m_Device->GetDevice(), framebuffer, nullptr);
@@ -236,6 +277,7 @@ void Swapchain::RecreateSwapchain()
 
 	CreateSwapchain();
 	CreateSwapchainImageViews();
+	CreateColorResources();
 	CreateDepthResources();
 	CreateFramebuffers();
 }

@@ -11,7 +11,7 @@
 class Swapchain
 {
 public:
-	Swapchain(GLFWwindow* windowContext, const Device* device, VkSurfaceKHR windowSurface);
+	Swapchain(GLFWwindow* windowContext, const Device* device, VkSurfaceKHR windowSurface, VkSampleCountFlagBits msaaSamples);
 	~Swapchain();
 
 	void RecreateSwapchain();
@@ -39,6 +39,7 @@ private:
 	void CreateSwapchain();
 	void CreateSwapchainImageViews();
 	void CreateRenderPass();
+	void CreateColorResources();
 	void CreateDepthResources();
 	void CreateFramebuffers();
 
@@ -53,9 +54,11 @@ private:
 	bool HasStencilComponent(VkFormat format);
 
 private:
+	// constructor parameters
 	GLFWwindow* m_WindowContext;
 	const Device* m_Device;
 	VkSurfaceKHR m_WindowSurface;
+	VkSampleCountFlagBits m_MsaaSamples;
 
 	VkSwapchainKHR m_Swapchain;
 	std::vector<VkImage> m_SwapchainImages;
@@ -65,6 +68,11 @@ private:
 
 	// TODO: make a framebuffer class
 	VkRenderPass m_RenderPass;
+
+	// for multisampling
+	VkImage m_ColorImage;
+	VkDeviceMemory m_ColorImageMemory;
+	VkImageView m_ColorImageView;
 
 	// TODO: make a depth buffer class
 	VkImage m_DepthImage;

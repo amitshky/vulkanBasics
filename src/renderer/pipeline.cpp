@@ -6,9 +6,10 @@
 #include "renderer/buffer/vertexBuffer.h"
 
 
-Pipeline::Pipeline(VkDevice deviceVk, VkRenderPass renderPass)
+Pipeline::Pipeline(VkDevice deviceVk, VkRenderPass renderPass, VkSampleCountFlagBits msaaSamples)
 	: m_DeviceVk{deviceVk},
-	  m_RenderPass{renderPass}
+	  m_RenderPass{renderPass},
+	  m_MsaaSamples{msaaSamples}
 {
 	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
@@ -74,7 +75,7 @@ void Pipeline::CreateGraphicsPipeline()
 	VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
 	multisampleStateCreateInfo.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampleStateCreateInfo.sampleShadingEnable   = VK_FALSE;
-	multisampleStateCreateInfo.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
+	multisampleStateCreateInfo.rasterizationSamples  = m_MsaaSamples;
 	multisampleStateCreateInfo.minSampleShading      = 1.0f;
 	multisampleStateCreateInfo.pSampleMask           = nullptr;
 	multisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;

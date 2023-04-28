@@ -65,7 +65,8 @@ void Texture::CreateTextureImage()
 
 	// to blit the image we use this image as both src and destination (blit is a transfer command)
 	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), static_cast<uint32_t>(width), static_cast<uint32_t>(height), m_MipLevels,
-		VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage, m_TextureImageMemory);
 
 	// copy staging buffer to the texture image
