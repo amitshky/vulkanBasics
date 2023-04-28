@@ -80,6 +80,8 @@ void Pipeline::CreateGraphicsPipeline()
 	multisampleStateCreateInfo.pSampleMask           = nullptr;
 	multisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
 	multisampleStateCreateInfo.alphaToOneEnable      = VK_FALSE;
+	multisampleStateCreateInfo.sampleShadingEnable   = VK_TRUE;
+	multisampleStateCreateInfo.minSampleShading      = 0.2f; // min fraction for sample shading; closer to 1 is smoother
 
 	// depth and stencil testing
 	VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
