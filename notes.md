@@ -331,3 +331,4 @@
 	* so we need to create an additional render target
 		* because only one draw operation is active at a time
 		* similar to depth buffer
+* Sample shading can be enabled to solve aliasing in textures
