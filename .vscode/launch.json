@@ -3,7 +3,7 @@
 	"configurations": [
 		// Clang
 		{
-			"name": "(Clang) Debug (cppvsdbg)",
+			"name": "(Win::Clang) Debug",
 			"type": "cppvsdbg",
 			"request": "launch",
 			"preLaunchTask": "Build-Clang-Debug",
@@ -15,7 +15,7 @@
 			"console": "newExternalWindow"
 		},
 		{
-			"name": "(Clang) Release",
+			"name": "(Win::Clang) Release",
 			"type": "cppvsdbg",
 			"request": "launch",
 			"preLaunchTask": "Build-Clang-Release",
@@ -28,7 +28,7 @@
 		},
 		// MSVC
 		{
-			"name": "(MSVC) Debug",
+			"name": "(Win::MSVC) Debug",
 			"type": "cppvsdbg",
 			"request": "launch",
 			"preLaunchTask": "Build-MSVC-Debug",
@@ -40,7 +40,7 @@
 			"console": "newExternalWindow"
 		},
 		{
-			"name": "(MSVC) Release",
+			"name": "(Win::MSVC) Release",
 			"type": "cppvsdbg",
 			"request": "launch",
 			"preLaunchTask": "Build-MSVC-Release",

@@ -14,8 +14,8 @@
 
 
 Texture::Texture(const Device* device, const CommandBuffer* commandBuffers)
-	: m_Device{device},
-	  m_CommandBuffers{commandBuffers}
+	: m_Device{ device },
+	  m_CommandBuffers{ commandBuffers }
 {
 	CreateTextureImage();
 	CreateTextureImageView();
@@ -36,8 +36,9 @@ void Texture::CreateTextureImage()
 	int height = 0;
 	int channels = 0;
 
-	// TODO: pass texture path in the class constructor and make this class more dynamic so that we can simply call this class to create and manage textures
-	// force alpha (even if there isnt one)
+	// TODO: pass texture path in the class constructor and make this class more
+	// dynamic so that we can simply call this class to create and manage
+	// textures force alpha (even if there isnt one)
 	auto imgData = stbi_load("assets/textures/viking_room.png", &width, &height, &channels, STBI_rgb_alpha);
 	VkDeviceSize imgSize = width * height * 4;
 
@@ -53,8 +54,13 @@ void Texture::CreateTextureImage()
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
-	utils::buff::CreateBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), imgSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+	utils::buff::CreateBuffer(m_Device->GetDevice(),
+		m_Device->GetPhysicalDevice(),
+		imgSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer,
+		stagingBufferMemory);
 
 	void* data;
 	vkMapMemory(m_Device->GetDevice(), stagingBufferMemory, 0, imgSize, 0, &data);
@@ -63,49 +69,87 @@ void Texture::CreateTextureImage()
 
 	stbi_image_free(imgData);
 
-	// to blit the image we use this image as both src and destination (blit is a transfer command)
-	utils::img::CreateImage(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), static_cast<uint32_t>(width), static_cast<uint32_t>(height), m_MipLevels,
-		VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+	// to blit the image we use this image as both src and destination (blit is
+	// a transfer command)
+	utils::img::CreateImage(m_Device->GetDevice(),
+		m_Device->GetPhysicalDevice(),
+		static_cast<uint32_t>(width),
+		static_cast<uint32_t>(height),
+		m_MipLevels,
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_IMAGE_TILING_OPTIMAL,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage, m_TextureImageMemory);
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		m_TextureImage,
+		m_TextureImageMemory);
 
 	// copy staging buffer to the texture image
 	// transfer the image layout to DST_OPTIMAl
-	TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_MipLevels);
-	utils::buff::CopyBufferToImage(m_Device->GetDevice(), m_Device->GetGraphicsQueue(), m_CommandBuffers->GetCommandPool(),
-		stagingBuffer, m_TextureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+	TransitionImageLayout(m_TextureImage,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		m_MipLevels);
+
+	utils::buff::CopyBufferToImage(m_Device->GetDevice(),
+		m_Device->GetGraphicsQueue(),
+		m_CommandBuffers->GetCommandPool(),
+		stagingBuffer,
+		m_TextureImage,
+		width,
+		height);
 
 	// to start sampling from the texture image in the shader
-	// uncomment and `m_MipLevels` to 1 (as a whole, not just for this function), if you are not generating mipmaps
-	//TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_MipLevels);
+	// uncomment and `m_MipLevels` to 1 (as a whole, not just for this
+	// function), if you are not generating mipmaps
+	// TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB,
+	// VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	// VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_MipLevels);
 
 	// fill texture image mipmaps
-	utils::img::GenerateMipmaps(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), m_CommandBuffers->GetCommandPool(), m_Device->GetGraphicsQueue(),
-		m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, width, height, m_MipLevels);
+	utils::img::GenerateMipmaps(m_Device->GetDevice(),
+		m_Device->GetPhysicalDevice(),
+		m_CommandBuffers->GetCommandPool(),
+		m_Device->GetGraphicsQueue(),
+		m_TextureImage,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		width,
+		height,
+		m_MipLevels);
 
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
 	vkFreeMemory(m_Device->GetDevice(), stagingBufferMemory, nullptr);
 }
 
-void Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
+void Texture::TransitionImageLayout(VkImage image,
+	VkFormat format,
+	VkImageLayout oldLayout,
+	VkImageLayout newLayout,
+	uint32_t mipLevels)
 {
-	// to copy the buffer into the image, we need the image to be in the right layout first
-	// one way to perform layout transitions is the use image memory barrier
-	VkCommandBuffer cmdBuff = utils::cmd::BeginSingleTimeCommands(m_Device->GetDevice(), m_CommandBuffers->GetCommandPool());
+	// to copy the buffer into the image, we need the image to be in the right
+	// layout first one way to perform layout transitions is the use image
+	// memory barrier
+	VkCommandBuffer cmdBuff =
+		utils::cmd::BeginSingleTimeCommands(m_Device->GetDevice(), m_CommandBuffers->GetCommandPool());
 
 	VkImageMemoryBarrier imgMemBarrier{};
-	imgMemBarrier.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	imgMemBarrier.oldLayout           = oldLayout; // use `VK_IMAGE_LAYOUT_UNDEFINED` as `oldLayout` if you don't care about the existing contents of the image
-	imgMemBarrier.newLayout           = newLayout;
-	imgMemBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // use indices of the queues if you use barriers to transfer the ownership of the queue family
+	imgMemBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	imgMemBarrier.oldLayout = oldLayout; // use `VK_IMAGE_LAYOUT_UNDEFINED` as `oldLayout` if you
+										 // don't care about the existing contents of the image
+	imgMemBarrier.newLayout = newLayout;
+	imgMemBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // use indices of the queues if you use
+																 // barriers to transfer the ownership of the
+																 // queue family
 	imgMemBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	imgMemBarrier.image               = image;
+	imgMemBarrier.image = image;
 	// specific part of the image that is affected
-	imgMemBarrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-	imgMemBarrier.subresourceRange.baseMipLevel   = 0;
-	imgMemBarrier.subresourceRange.levelCount     = mipLevels;
+	imgMemBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imgMemBarrier.subresourceRange.baseMipLevel = 0;
+	imgMemBarrier.subresourceRange.levelCount = mipLevels;
 	imgMemBarrier.subresourceRange.baseArrayLayer = 0;
-	imgMemBarrier.subresourceRange.layerCount     = 1;
+	imgMemBarrier.subresourceRange.layerCount = 1;
 
 	// specify operations that the resource has to wait for
 	// handle access masks and pipeline stages
@@ -137,38 +181,46 @@ void Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayou
 
 	vkCmdPipelineBarrier(cmdBuff, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &imgMemBarrier);
 
-	utils::cmd::EndSingleTimeCommands(m_Device->GetDevice(), m_Device->GetGraphicsQueue(), m_CommandBuffers->GetCommandPool(), cmdBuff);
+	utils::cmd::EndSingleTimeCommands(
+		m_Device->GetDevice(), m_Device->GetGraphicsQueue(), m_CommandBuffers->GetCommandPool(), cmdBuff);
 }
 
 void Texture::CreateTextureImageView()
 {
-	m_TextureImageView = utils::img::CreateImageView(m_Device->GetDevice(), m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels);
+	m_TextureImageView = utils::img::CreateImageView(
+		m_Device->GetDevice(), m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_MipLevels);
 }
 
 void Texture::CreateTextureSampler()
 {
-	// VkImage holds the image data, the VkSampler controls how that data is read while rendering
+	// VkImage holds the image data, the VkSampler controls how that data is
+	// read while rendering
 	VkPhysicalDeviceProperties phyDevProperties{};
 	vkGetPhysicalDeviceProperties(m_Device->GetPhysicalDevice(), &phyDevProperties);
 
 	VkSamplerCreateInfo samplerCreateInfo{};
-	samplerCreateInfo.sType     = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
 	samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
 	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerCreateInfo.anisotropyEnable = VK_TRUE;
-	samplerCreateInfo.maxAnisotropy    = phyDevProperties.limits.maxSamplerAnisotropy;
-	samplerCreateInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // specifies which color is returned when sampling beyond the image with clamp to border addressing mode
-	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE; // specifies which coordinate system you want to use to address texels in an image.
-														  // If this field is VK_TRUE, then you can simply use coordinates within the [0, texWidth) and [0, texHeight) range
+	samplerCreateInfo.maxAnisotropy = phyDevProperties.limits.maxSamplerAnisotropy;
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // specifies which color is returned
+																	  // when sampling beyond the image with
+																	  // clamp to border addressing mode
+	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE; // specifies which coordinate system you want to use to
+														  // address texels in an image. If this field is VK_TRUE, then
+														  // you can simply use coordinates within the [0, texWidth) and
+														  // [0, texHeight) range
 	samplerCreateInfo.compareEnable = VK_FALSE;
-	samplerCreateInfo.compareOp     = VK_COMPARE_OP_ALWAYS;
-	samplerCreateInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerCreateInfo.minLod        = 0.0f;
-	samplerCreateInfo.maxLod        = static_cast<float>(m_MipLevels);
-	samplerCreateInfo.mipLodBias    = 0.0f; // lets us force vulkan to use lower LOD and level than it would normally use
+	samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCreateInfo.minLod = 0.0f;
+	samplerCreateInfo.maxLod = static_cast<float>(m_MipLevels);
+	samplerCreateInfo.mipLodBias = 0.0f; // lets us force vulkan to use lower LOD and level than it would
+										 // normally use
 
 	if (vkCreateSampler(m_Device->GetDevice(), &samplerCreateInfo, nullptr, &m_TextureSampler) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create texture sampler!");

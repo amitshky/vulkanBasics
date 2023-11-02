@@ -12,20 +12,24 @@
 #include "renderer/camera.h"
 
 
-struct UniformBufferObject 
+struct UniformBufferObject
 {
 	// explicitly speicify alignments
-	// because vulkan expects structs to be in a specific alignment with the structs in the shaders
+	// because vulkan expects structs to be in a specific alignment with the
+	// structs in the shaders
 	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
 };
 
 
-class UniformBuffer 
+class UniformBuffer
 {
 public:
-	UniformBuffer(const int maxFramesInFlight, const Device* device, const Pipeline* graphicsPipeline, const Texture* texture);
+	UniformBuffer(const int maxFramesInFlight,
+		const Device* device,
+		const Pipeline* graphicsPipeline,
+		const Texture* texture);
 	~UniformBuffer();
 
 	void Update(uint32_t currentFrameIdx, const Camera* camera);
@@ -47,7 +51,7 @@ private:
 	std::vector<VkBuffer> m_UniformBuffers;
 	std::vector<VkDeviceMemory> m_UniformBuffersMemory;
 	std::vector<void*> m_UniformBuffersMapped;
-	
+
 	VkDescriptorPool m_DescriptorPool;
 	std::vector<VkDescriptorSet> m_DescriptorSets;
 };

@@ -14,7 +14,7 @@ public:
 	void OnUpdate(GLFWwindow* window, float deltaTime, uint32_t width, uint32_t height);
 	void OnMouseMove(GLFWwindow* window, double xpos, double ypos);
 
-	inline glm::mat4 GetViewMatrix()       const { return m_ViewMatrix; }
+	inline glm::mat4 GetViewMatrix() const { return m_ViewMatrix; }
 	inline glm::mat4 GetProjectionMatrix() const { return m_ProjectionMatrix; }
 
 	void Orbit(GLFWwindow* window, double xpos, double ypos);

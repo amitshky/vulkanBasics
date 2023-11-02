@@ -8,17 +8,17 @@
 
 
 Device::Device()
-	: m_VulkanInstance{nullptr},
-	  m_WindowSurface{nullptr},
-	  m_Config{nullptr},
-	  m_PhysicalDevice{VK_NULL_HANDLE},
-	  m_MsaaSamples{VK_SAMPLE_COUNT_1_BIT}
-{
-
-}
+	: m_VulkanInstance{ nullptr },
+	  m_WindowSurface{ nullptr },
+	  m_Config{ nullptr },
+	  m_PhysicalDevice{ VK_NULL_HANDLE },
+	  m_MsaaSamples{ VK_SAMPLE_COUNT_1_BIT }
+{}
 
 Device::Device(VkInstance vulkanInstance, VkSurfaceKHR windowSurface, const VulkanConfig* config)
-	: m_VulkanInstance{vulkanInstance}, m_WindowSurface{windowSurface}, m_Config{config}
+	: m_VulkanInstance{ vulkanInstance },
+	  m_WindowSurface{ windowSurface },
+	  m_Config{ config }
 {
 	PickPhysicalDevice();
 	CreateLogicalDevice();
@@ -32,12 +32,13 @@ Device::~Device()
 void Device::PickPhysicalDevice()
 {
 	uint32_t physicalDeviceCount = 0;
-	vkEnumeratePhysicalDevices(m_VulkanInstance, &physicalDeviceCount, nullptr); // get physical device count
+	vkEnumeratePhysicalDevices(m_VulkanInstance, &physicalDeviceCount,
+		nullptr); // get physical device count
 
 	if (physicalDeviceCount == 0)
 		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 
-	std::vector<VkPhysicalDevice> physicalDevices{physicalDeviceCount};
+	std::vector<VkPhysicalDevice> physicalDevices{ physicalDeviceCount };
 	vkEnumeratePhysicalDevices(m_VulkanInstance, &physicalDeviceCount, physicalDevices.data());
 
 	// currently we only work with one device
@@ -69,18 +70,15 @@ void Device::CreateLogicalDevice()
 
 	// we have multiple queues so we create a set of unique queue families
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
-	std::set<uint32_t> uniqueQueueFamilies = {
-		indices.graphicsFamily.value(),
-		indices.presentFamily.value()
-	};
+	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 	float queuePriority = 1.0f;
 	for (const auto& queueFamily : uniqueQueueFamilies)
 	{
 		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = queueFamily;
-		queueCreateInfo.queueCount       = 1;
+		queueCreateInfo.queueCount = 1;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
@@ -92,18 +90,19 @@ void Device::CreateLogicalDevice()
 
 	// create logical device
 	VkDeviceCreateInfo deviceCreateInfo{};
-	deviceCreateInfo.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	deviceCreateInfo.pQueueCreateInfos    = queueCreateInfos.data();
-	deviceCreateInfo.pEnabledFeatures     = &deviceFeatures;
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
-	// these are similar to create instance but they are device specific this time
-	deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(m_Config->deviceExtensions.size());
+	// these are similar to create instance but they are device specific this
+	// time
+	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(m_Config->deviceExtensions.size());
 	deviceCreateInfo.ppEnabledExtensionNames = m_Config->deviceExtensions.data();
 
 	if (m_Config->enableValidationLayers)
 	{
-		deviceCreateInfo.enabledLayerCount   = static_cast<uint32_t>(m_Config->validationLayers.size());
+		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(m_Config->validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = m_Config->validationLayers.data();
 	}
 	else
@@ -116,7 +115,7 @@ void Device::CreateLogicalDevice()
 
 	// get the queue handle
 	vkGetDeviceQueue(m_DeviceVk, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
-	vkGetDeviceQueue(m_DeviceVk, indices.presentFamily.value(),  0, &m_PresentQueue);
+	vkGetDeviceQueue(m_DeviceVk, indices.presentFamily.value(), 0, &m_PresentQueue);
 }
 
 bool Device::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
@@ -145,10 +144,10 @@ bool Device::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
 	uint32_t extensionCount = 0;
 	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
 
-	std::vector<VkExtensionProperties> availableExtensions{extensionCount};
+	std::vector<VkExtensionProperties> availableExtensions{ extensionCount };
 	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
 
-	std::set<std::string> requiredExtensions{m_Config->deviceExtensions.begin(), m_Config->deviceExtensions.end()};
+	std::set<std::string> requiredExtensions{ m_Config->deviceExtensions.begin(), m_Config->deviceExtensions.end() };
 
 	for (const auto& extension : availableExtensions)
 		requiredExtensions.erase(extension.extensionName);
@@ -161,7 +160,8 @@ VkSampleCountFlagBits Device::GetMaxUsableSampleCount()
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &physicalDeviceProperties);
 
-	VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+	VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts
+								& physicalDeviceProperties.limits.framebufferDepthSampleCounts;
 
 	if (counts & VK_SAMPLE_COUNT_64_BIT)
 		return VK_SAMPLE_COUNT_64_BIT;

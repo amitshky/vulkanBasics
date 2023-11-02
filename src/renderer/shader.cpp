@@ -4,12 +4,13 @@
 
 
 Shader::Shader(const std::string& path, ShaderType type, VkDevice deviceVk)
-	: m_Path{path}, 
-	  m_Type{type},
-	  m_DeviceVk{deviceVk},
+	: m_Path{ path },
+	  m_Type{ type },
+	  m_DeviceVk{ deviceVk },
 	  m_ShaderCode{},
-	  m_ShaderModule{VK_NULL_HANDLE},
-	  m_ShaderStage{} // has to be default initialized to initialize all its fields
+	  m_ShaderModule{ VK_NULL_HANDLE },
+	  m_ShaderStage{}
+// has to be default initialized to initialize all its fields
 {
 	LoadShader();
 	CreateShaderModule();
@@ -38,7 +39,7 @@ void Shader::LoadShader()
 void Shader::CreateShaderModule()
 {
 	VkShaderModuleCreateInfo shaderModuleCreateInfo{};
-	shaderModuleCreateInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	shaderModuleCreateInfo.codeSize = m_ShaderCode.size();
 	// code is in char but shaderModule expects it to be in uint32_t
 	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(m_ShaderCode.data());
@@ -50,12 +51,13 @@ void Shader::CreateShaderModule()
 void Shader::CreateShaderStage()
 {
 	m_ShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	
+
 	if (m_Type == ShaderType::VERTEX)
 		m_ShaderStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
 	else if (m_Type == ShaderType::FRAGMENT)
 		m_ShaderStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	
+
 	m_ShaderStage.module = m_ShaderModule;
-	m_ShaderStage.pName  = "main"; // entrypoint // so it is possible to combine multiple shaders into a single module
+	m_ShaderStage.pName = "main"; // entrypoint // so it is possible to combine
+								  // multiple shaders into a single module
 }

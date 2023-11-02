@@ -3,8 +3,7 @@
 #include <stdexcept>
 
 
-namespace utils
-{
+namespace utils {
 
 uint32_t FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
@@ -39,7 +38,8 @@ SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice physicalDevice, V
 	if (formatCount != 0)
 	{
 		swapchainDetails.formats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, windowSurface, &formatCount, swapchainDetails.formats.data());
+		vkGetPhysicalDeviceSurfaceFormatsKHR(
+			physicalDevice, windowSurface, &formatCount, swapchainDetails.formats.data());
 	}
 	// query supported presentation modes
 	uint32_t presentModeCount = 0;
@@ -47,7 +47,8 @@ SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice physicalDevice, V
 	if (presentModeCount != 0)
 	{
 		swapchainDetails.presentModes.resize(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, windowSurface, &presentModeCount, swapchainDetails.presentModes.data());
+		vkGetPhysicalDeviceSurfacePresentModesKHR(
+			physicalDevice, windowSurface, &presentModeCount, swapchainDetails.presentModes.data());
 	}
 
 	return swapchainDetails;
@@ -60,7 +61,7 @@ QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceK
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
-	std::vector<VkQueueFamilyProperties> queueFamilies{queueFamilyCount};
+	std::vector<VkQueueFamilyProperties> queueFamilies{ queueFamilyCount };
 	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
 
 	// find a queue that supports graphics commands
@@ -70,8 +71,8 @@ QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceK
 			indices.graphicsFamily = i;
 
 		// check for queue family compatible for presentation
-		// the graphics queue and the presentation queue might end up being the same
-		// but we treat them as separate queues
+		// the graphics queue and the presentation queue might end up being the
+		// same but we treat them as separate queues
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, windowSurface, &presentSupport);
 
