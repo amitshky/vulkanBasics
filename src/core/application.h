@@ -82,7 +82,8 @@ private:
 	std::unique_ptr<Camera> m_Camera;
 
 	// synchronization objects
-	// semaphores to sync gpu operations and fence to sync cpu operation with the gpu operation
+	// semaphores to sync gpu operations and fence to sync cpu operation with
+	// the gpu operation
 	std::vector<VkSemaphore> m_ImageAvailableSemaphores;
 	std::vector<VkSemaphore> m_RenderFinishedSemaphores;
 	std::vector<VkFence> m_InFlightFences;
@@ -95,5 +96,5 @@ private:
 
 	// for delta time
 	float m_LastFrameTime = 0.0f;
-	float m_DeltaTime     = 0.0f;
+	float m_DeltaTime = 0.0f;
 };

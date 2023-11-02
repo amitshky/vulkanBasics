@@ -6,30 +6,40 @@
 #include "commandBufferUtils.h"
 
 
-namespace utils
-{
-namespace img
-{
+namespace utils {
+namespace img {
 
-void CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, uint32_t mipLevels,
-	VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-	VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+void CreateImage(VkDevice deviceVk,
+	VkPhysicalDevice physicalDevice,
+	uint32_t width,
+	uint32_t height,
+	uint32_t mipLevels,
+	VkSampleCountFlagBits numSamples,
+	VkFormat format,
+	VkImageTiling tiling,
+	VkImageUsageFlags usage,
+	VkMemoryPropertyFlags properties,
+	VkImage& image,
+	VkDeviceMemory& imageMemory)
 {
 	VkImageCreateInfo imgCreateInfo{};
-	imgCreateInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imgCreateInfo.imageType     = VK_IMAGE_TYPE_2D;
-	imgCreateInfo.extent.width  = width;
+	imgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imgCreateInfo.extent.width = width;
 	imgCreateInfo.extent.height = height;
-	imgCreateInfo.extent.depth  = 1;
-	imgCreateInfo.mipLevels     = mipLevels;
-	imgCreateInfo.arrayLayers   = 1;
-	imgCreateInfo.format        = format;
-	imgCreateInfo.tiling        = tiling; // Texels are laid out in an implementation defined order for optimal access
-	imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // not needed because we copy the texel data from the buffer
-	imgCreateInfo.usage         = usage; // `VK_IMAGE_USAGE_SAMPLED_BIT` because we also want the image to be accessed from the shader
-	imgCreateInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
-	imgCreateInfo.samples       = numSamples;
-	imgCreateInfo.flags         = 0; // for sparse images
+	imgCreateInfo.extent.depth = 1;
+	imgCreateInfo.mipLevels = mipLevels;
+	imgCreateInfo.arrayLayers = 1;
+	imgCreateInfo.format = format;
+	imgCreateInfo.tiling = tiling; // Texels are laid out in an implementation
+								   // defined order for optimal access
+	imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // not needed because we copy the texel
+															 // data from the buffer
+	imgCreateInfo.usage = usage; // `VK_IMAGE_USAGE_SAMPLED_BIT` because we also want the
+								 // image to be accessed from the shader
+	imgCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imgCreateInfo.samples = numSamples;
+	imgCreateInfo.flags = 0; // for sparse images
 
 	if (vkCreateImage(deviceVk, &imgCreateInfo, nullptr, &image) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create image object!");
@@ -48,18 +58,22 @@ void CreateImage(VkDevice deviceVk, VkPhysicalDevice physicalDevice, uint32_t wi
 	vkBindImageMemory(deviceVk, image, imageMemory, 0);
 }
 
-VkImageView CreateImageView(VkDevice deviceVk, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
+VkImageView CreateImageView(VkDevice deviceVk,
+	VkImage image,
+	VkFormat format,
+	VkImageAspectFlags aspectFlags,
+	uint32_t mipLevels)
 {
 	VkImageViewCreateInfo imgViewCreateInfo{};
-	imgViewCreateInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	imgViewCreateInfo.image    = image;
-	imgViewCreateInfo.format   = format;
+	imgViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	imgViewCreateInfo.image = image;
+	imgViewCreateInfo.format = format;
 	imgViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	imgViewCreateInfo.subresourceRange.aspectMask     = aspectFlags;
-	imgViewCreateInfo.subresourceRange.baseMipLevel   = 0;
-	imgViewCreateInfo.subresourceRange.levelCount     = mipLevels;
+	imgViewCreateInfo.subresourceRange.aspectMask = aspectFlags;
+	imgViewCreateInfo.subresourceRange.baseMipLevel = 0;
+	imgViewCreateInfo.subresourceRange.levelCount = mipLevels;
 	imgViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-	imgViewCreateInfo.subresourceRange.layerCount     = 1;
+	imgViewCreateInfo.subresourceRange.layerCount = 1;
 
 	VkImageView imageView;
 	if (vkCreateImageView(deviceVk, &imgViewCreateInfo, nullptr, &imageView) != VK_SUCCESS)
@@ -68,8 +82,15 @@ VkImageView CreateImageView(VkDevice deviceVk, VkImage image, VkFormat format, V
 	return imageView;
 }
 
-void GenerateMipmaps(VkDevice deviceVk, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue,
-	VkImage image, VkFormat format, int32_t width, int32_t height, uint32_t mipLevels)
+void GenerateMipmaps(VkDevice deviceVk,
+	VkPhysicalDevice physicalDevice,
+	VkCommandPool commandPool,
+	VkQueue graphicsQueue,
+	VkImage image,
+	VkFormat format,
+	int32_t width,
+	int32_t height,
+	uint32_t mipLevels)
 {
 	// TODO: load mipmaps from a file instead of generating them
 
@@ -96,14 +117,24 @@ void GenerateMipmaps(VkDevice deviceVk, VkPhysicalDevice physicalDevice, VkComma
 
 	for (uint32_t i = 1; i < mipLevels; ++i)
 	{
-		// trasition the `i - 1` mip level to `VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL`
+		// trasition the `i - 1` mip level to
+		// `VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL`
 		imgBarrier.subresourceRange.baseMipLevel = i - 1;
 		imgBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		imgBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		imgBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		imgBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-		vkCmdPipelineBarrier(cmdBuff, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier);
+		vkCmdPipelineBarrier(cmdBuff,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,
+			0,
+			nullptr,
+			0,
+			nullptr,
+			1,
+			&imgBarrier);
 
 		// specify the region to be used in blit operation
 		// the src mip level is `i - 1`
@@ -122,18 +153,36 @@ void GenerateMipmaps(VkDevice deviceVk, VkPhysicalDevice physicalDevice, VkComma
 		blit.dstSubresource.baseArrayLayer = 0;
 		blit.dstSubresource.layerCount = 1;
 
-		vkCmdBlitImage(cmdBuff, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+		vkCmdBlitImage(cmdBuff,
+			image,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&blit,
+			VK_FILTER_LINEAR);
 
-		// trasition the `i - 1` mip level to `VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL`
-		// all the sampling operations will wait on this transition to finish
+		// trasition the `i - 1` mip level to
+		// `VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL` all the sampling
+		// operations will wait on this transition to finish
 		imgBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		imgBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imgBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		imgBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-		vkCmdPipelineBarrier(cmdBuff, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier);
+		vkCmdPipelineBarrier(cmdBuff,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			0,
+			0,
+			nullptr,
+			0,
+			nullptr,
+			1,
+			&imgBarrier);
 
-		// one of the dimensions will reach 1 before the other, so keep it 1 when it does (because the image is not a square)
+		// one of the dimensions will reach 1 before the other, so keep it 1
+		// when it does (because the image is not a square)
 		if (mipWidth > 1)
 			mipWidth /= 2;
 
@@ -141,15 +190,26 @@ void GenerateMipmaps(VkDevice deviceVk, VkPhysicalDevice physicalDevice, VkComma
 			mipHeight /= 2;
 	}
 
-	// this barrier transitions the last mip level from `VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL` to `VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL`
-	// the loop doesnt handle this
+	// this barrier transitions the last mip level from
+	// `VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL` to
+	// `VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL` the loop doesnt handle
+	// this
 	imgBarrier.subresourceRange.baseMipLevel = mipLevels - 1;
 	imgBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	imgBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	imgBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	imgBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-	vkCmdPipelineBarrier(cmdBuff, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier);
+	vkCmdPipelineBarrier(cmdBuff,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		0,
+		0,
+		nullptr,
+		0,
+		nullptr,
+		1,
+		&imgBarrier);
 
 	cmd::EndSingleTimeCommands(deviceVk, graphicsQueue, commandPool, cmdBuff);
 }

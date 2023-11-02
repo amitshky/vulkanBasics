@@ -1,19 +1,17 @@
 #include "commandBufferUtils.h"
 
 
-namespace utils
-{
-namespace cmd
-{
+namespace utils {
+namespace cmd {
 
 VkCommandBuffer BeginSingleTimeCommands(VkDevice deviceVk, VkCommandPool commandPool)
 {
 	// transfer operations are also executed using command buffers
 	// so we allocate a temporary command buffer
 	VkCommandBufferAllocateInfo cmdBuffAllocInfo{};
-	cmdBuffAllocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cmdBuffAllocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cmdBuffAllocInfo.commandPool        = commandPool;
+	cmdBuffAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cmdBuffAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBuffAllocInfo.commandPool = commandPool;
 	cmdBuffAllocInfo.commandBufferCount = 1;
 
 	VkCommandBuffer cmdBuff;
@@ -35,13 +33,15 @@ void EndSingleTimeCommands(VkDevice deviceVk, VkQueue graphicsQueue, VkCommandPo
 
 	// submit the queue
 	VkSubmitInfo submitInfo{};
-	submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers    = &cmdBuff;
+	submitInfo.pCommandBuffers = &cmdBuff;
 
-	// we dont necessarily need a transfer queue, graphics queue can handle it
+	// we dont necessarily need a transfer queue, graphics queue can handle
+	// it
 	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	// we can use a fence to wait; this can help to schedule multiple transfers simultaneously
+	// we can use a fence to wait; this can help to schedule multiple
+	// transfers simultaneously
 	vkQueueWaitIdle(graphicsQueue);
 
 	vkFreeCommandBuffers(deviceVk, commandPool, 1, &cmdBuff);

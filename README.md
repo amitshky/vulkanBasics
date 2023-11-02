@@ -12,7 +12,10 @@ Learning Vulkan API
 cmake -B build -S .
 cmake --build build
 ```
-* Then navigate to the output file (.exe) and run it.
+* Then navigate to the output file and run it (run it from the root directory of the repo). For example,
+```
+./build/<path_to_executable>
+```
 
 OR (in VSCode)
 
@@ -33,7 +36,7 @@ OR (using bat scripts from `scripts` folder)
 * E and Q to move the camera up and down.
 * R to reset the camera
 * Esc to close the window
-* Left click and drag the mouse to move the view of the camera (in first person)
+* Left click and drag the mouse to move the camera
 
 
 ## Notes

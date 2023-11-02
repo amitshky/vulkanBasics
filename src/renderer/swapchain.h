@@ -11,7 +11,10 @@
 class Swapchain
 {
 public:
-	Swapchain(GLFWwindow* windowContext, const Device* device, VkSurfaceKHR windowSurface, VkSampleCountFlagBits msaaSamples);
+	Swapchain(GLFWwindow* windowContext,
+		const Device* device,
+		VkSurfaceKHR windowSurface,
+		VkSampleCountFlagBits msaaSamples);
 	~Swapchain();
 
 	void RecreateSwapchain();
@@ -49,7 +52,9 @@ private:
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
-	VkFormat FindSupportedFormat(const std::vector<VkFormat>& canditateFormats, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat FindSupportedFormat(const std::vector<VkFormat>& canditateFormats,
+		VkImageTiling tiling,
+		VkFormatFeatureFlags features);
 	VkFormat FindDepthFormat();
 	bool HasStencilComponent(VkFormat format);
 

@@ -6,15 +6,17 @@
 #include <vector>
 
 
-enum class ShaderType {
-	VERTEX, FRAGMENT
+enum class ShaderType
+{
+	VERTEX,
+	FRAGMENT
 };
 
 class Shader
 {
 public:
 	Shader(const std::string& path, ShaderType type, VkDevice device);
-	~Shader(); 
+	~Shader();
 
 	inline VkPipelineShaderStageCreateInfo GetShaderStage() const { return m_ShaderStage; }
 
@@ -29,7 +31,7 @@ private:
 	VkDevice m_DeviceVk;
 
 	std::vector<char> m_ShaderCode;
-	
+
 	VkShaderModule m_ShaderModule;
 	VkPipelineShaderStageCreateInfo m_ShaderStage;
 };

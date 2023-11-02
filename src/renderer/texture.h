@@ -20,7 +20,11 @@ private:
 	void CreateTextureImageView();
 	void CreateTextureSampler();
 
-	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
+	void TransitionImageLayout(VkImage image,
+		VkFormat format,
+		VkImageLayout oldLayout,
+		VkImageLayout newLayout,
+		uint32_t mipLevels);
 
 private:
 	const Device* m_Device;

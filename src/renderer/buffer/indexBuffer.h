@@ -8,7 +8,7 @@
 #include "renderer/buffer/commandBuffer.h"
 
 
-class IndexBuffer 
+class IndexBuffer
 {
 public:
 	IndexBuffer(const Device* device, const CommandBuffer* commandBuffers, const std::vector<uint32_t>& indices);
@@ -21,7 +21,7 @@ private:
 
 private:
 	const Device* m_Device;
-	const CommandBuffer* m_CommandBuffers; 
+	const CommandBuffer* m_CommandBuffers;
 
 	std::vector<uint32_t> m_Indices;
 
